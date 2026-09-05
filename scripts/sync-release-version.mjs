@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-const rootPackageJsonPath = path.join(repoRoot, "package.json");
-const webPackageJsonPath = path.join(repoRoot, "apps", "web", "package.json");
+const rootPackageJsonPath = path.join(repoRoot, "");
+const webPackageJsonPath = path.join(repoRoot, "apps", "web", "");
 const rootChangelogPath = path.join(repoRoot, "CHANGELOG.md");
 const webChangelogPath = path.join(repoRoot, "apps", "web", "CHANGELOG.md");
 
