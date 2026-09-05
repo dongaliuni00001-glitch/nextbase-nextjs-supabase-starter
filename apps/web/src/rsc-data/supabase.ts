@@ -28,15 +28,26 @@ export const getCachedLoggedInSupabaseUser = cache(async () => {
 });
 
 export const getCachedLoggedInUserClaims = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getClaims();
-  if (error) {
-    throw error;
+  try {
+    const supabase = createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      return { sub: null };
+    }
+    return { sub: user.id, ...user };
+  } catch {
+    return { sub: null };
   }
-  if (!data?.claims) {
-    throw new Error('No claims found');
-  }
-  return data.claims;
+});
+
+export const getCachedIsUserLoggedIn = cache(async () => {
+  const claims = await getCachedLoggedInUserClaims();
+  return claims?.sub !== null && claims?.sub !== undefined;
+});
+
+export const getCachedLoggedInUserId = cache(async () => {
+  const claims = await getCachedLoggedInUserClaims();
+  return claims?.sub ?? null;
 });
 
 export const getCachedIsUserLoggedIn = cache(async () => {
