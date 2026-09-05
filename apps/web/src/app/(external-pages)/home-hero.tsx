@@ -24,7 +24,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-import { createClient } from '../../supabase-clients/server';
+import { createClient } from '@/rsc-data/supabase';
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
