@@ -32,28 +32,28 @@ export const getCachedLoggedInUserId = cache(async () => {
   }
 });
 
-export const getCachedLoggedInSupabaseUser = cache(async (): Promise<{ user: any }> => {
+export const getCachedLoggedInSupabaseUser = cache(async () => {
   try {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user) {
-      return { user: null };
+      return null;
     }
-    return { user: data.session.user };
+    return data.session.user;
   } catch {
-    return { user: null };
+    return null;
   }
 });
 
-export const getCachedLoggedInVerifiedSupabaseUser = cache(async (): Promise<{ user: any }> => {
+export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
   try {
     const supabase = await createSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      return { user: null };
+      return null;
     }
-    return { user };
+    return user;
   } catch {
-    return { user: null };
+    return null;
   }
 });
