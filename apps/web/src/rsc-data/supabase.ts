@@ -39,13 +39,20 @@ export const getCachedLoggedInUserClaims = cache(async () => {
   return data.claims;
 });
 
-
 export const getCachedIsUserLoggedIn = cache(async () => {
-  const claims = await getCachedLoggedInUserClaims();
-  return claims.sub !== null;
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub !== null && claims?.sub !== undefined;
+  } catch {
+    return false;
+  }
 });
 
 export const getCachedLoggedInUserId = cache(async () => {
-  const claims = await getCachedLoggedInUserClaims();
-  return claims.sub;
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub ?? null;
+  } catch {
+    return null;
+  }
 });
