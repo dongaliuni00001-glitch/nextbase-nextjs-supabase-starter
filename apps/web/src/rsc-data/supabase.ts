@@ -37,11 +37,11 @@ export const getCachedLoggedInSupabaseUser = cache(async () => {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user) {
-      return { user: null };
+      return { user: null as any };
     }
-    return { user: data.session.user };
+    return { user: data.session.user as any };
   } catch {
-    return { user: null };
+    return { user: null as any };
   }
 });
 
@@ -50,10 +50,10 @@ export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
     const supabase = await createSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      return { user: null };
+      return { user: null as any };
     }
-    return { user };
+    return { user: user as any };
   } catch {
-    return { user: null };
+    return { user: null as any };
   }
 });
