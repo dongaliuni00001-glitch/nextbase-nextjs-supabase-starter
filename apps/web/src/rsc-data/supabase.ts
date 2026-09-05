@@ -37,24 +37,23 @@ export const getCachedLoggedInSupabaseUser = cache(async () => {
     const supabase = await createSupabaseClient();
     const { data, error } = await supabase.auth.getSession();
     if (error || !data.session?.user) {
-      return null;
+      return { user: null };
     }
-    return data.session.user;
+    return { user: data.session.user };
   } catch {
-    return null;
+    return { user: null };
   }
 });
 
-// 누락되었던 인증 검증 유저 함수 추가
 export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
   try {
     const supabase = await createSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      return null;
+      return { user: null };
     }
-    return user;
+    return { user };
   } catch {
-    return null;
+    return { user: null };
   }
 });
