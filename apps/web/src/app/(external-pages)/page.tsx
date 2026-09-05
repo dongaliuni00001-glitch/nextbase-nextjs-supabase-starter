@@ -5,6 +5,10 @@ import { HomeCTA } from './home-cta';
 import { HomeFeatures, type HomeFeature } from './home-features';
 import { HomeHero } from './home-hero';
 
+// 페이지 캐싱을 완전히 방지하고 매 요청마다 실시간으로 서버에서 렌더링
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const features: HomeFeature[] = [
   {
     icon: Shield,
