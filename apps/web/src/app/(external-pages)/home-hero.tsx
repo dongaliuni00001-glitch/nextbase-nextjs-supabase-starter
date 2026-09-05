@@ -24,8 +24,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-// 절대 경로 대신 상대 경로로 임포트하여 모듈 찾기 에러 방지
-import { createClient } from '../../supabase-clients/server';
+import { createClient } from '@/rsc-data/supabase';
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
