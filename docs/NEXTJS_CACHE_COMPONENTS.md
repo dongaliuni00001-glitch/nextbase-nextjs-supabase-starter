@@ -627,22 +627,41 @@ export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
 });
 
 // Fast claims extraction (no server call)
+import { cache } from 'react';
+import { createSupabaseClient } from '@/supabase-clients/server';
+
 export const getCachedLoggedInUserClaims = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getClaims();
-  if (error) {
-    throw error;
+  try {
+    const supabase = await createSupabaseClient();
+    // getClaims가 없거나 에러가 나도 안전하게 처리
+    const { data, error } = await (supabase.auth as any).getClaims?.() || {};
+
+    if (error || !data?.claims) {
+      return { sub: null };
+    }
+
+    return data.claims;
+  } catch {
+    return { sub: null };
   }
-  if (!data?.claims) {
-    throw new Error('No claims found');
-  }
-  return data.claims;
 });
 
-// Login status check using claims
 export const getCachedIsUserLoggedIn = cache(async () => {
-  const claims = await getCachedLoggedInUserClaims();
-  return claims.sub !== null;
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub !== null && claims?.sub !== undefined;
+  } catch {
+    return false;
+  }
+});
+
+export const getCachedLoggedInUserId = cache(async () => {
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub ?? null;
+  } catch {
+    return null;
+  }
 });
 
 // Extract user ID from claims
@@ -973,23 +992,42 @@ export default async function DashboardHeading() {
 **Location:** `src/rsc-data/supabase.ts`
 
 ```typescript
+import { cache } from 'react';
+import { createSupabaseClient } from '@/supabase-clients/server';
+
 export const getCachedLoggedInUserClaims = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getClaims();
-  if (error) {
-    throw error;
+  try {
+    const supabase = await createSupabaseClient();
+    // getClaims가 없거나 에러가 나도 안전하게 처리
+    const { data, error } = await (supabase.auth as any).getClaims?.() || {};
+
+    if (error || !data?.claims) {
+      return { sub: null };
+    }
+
+    return data.claims;
+  } catch {
+    return { sub: null };
   }
-  if (!data?.claims) {
-    throw new Error('No claims found');
-  }
-  return data.claims;
 });
 
 export const getCachedIsUserLoggedIn = cache(async () => {
-  const claims = await getCachedLoggedInUserClaims();
-  return claims.sub !== null;
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub !== null && claims?.sub !== undefined;
+  } catch {
+    return false;
+  }
 });
-```
+
+export const getCachedLoggedInUserId = cache(async () => {
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub ?? null;
+  } catch {
+    return null;
+  }
+});
 
 **Why request-memoized?** Multiple components may check auth status in a single request.
 
