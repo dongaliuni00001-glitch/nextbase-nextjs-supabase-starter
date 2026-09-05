@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 import {
   ArrowRight,
   Check,
@@ -24,15 +28,36 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-import { createSupabaseClient } from '@/supabase-clients/server';
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
-export async function HomeHero() {
-  const supabase = await createSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export function HomeHero() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+    );
+
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setIsLoading(false);
+    }
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <section className="relative overflow-hidden">
@@ -54,7 +79,9 @@ export async function HomeHero() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            {user ? (
+            {isLoading ? (
+              <div className="h-11 w-36 animate-pulse rounded-md bg-muted" />
+            ) : isLoggedIn ? (
               <Button asChild size="lg">
                 <Link href="/dashboard">
                   Go to dashboard

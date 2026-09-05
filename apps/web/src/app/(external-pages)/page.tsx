@@ -1,55 +1,53 @@
-'use client';
+import { Suspense } from 'react';
+import { Separator } from '@/components/ui/separator';
+import { ArrowRight, Database, Lock, Palette, Shield, Zap } from 'lucide-react';
+import { HomeCTA } from './home-cta';
+import { HomeFeatures, type HomeFeature } from './home-features';
+import { HomeHero } from './home-hero';
 
-import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button'; // 프로젝트에 맞는 Button 경로 확인
+const features: HomeFeature[] = [
+  {
+    icon: Shield,
+    title: 'Type-Safe',
+    description: 'End-to-end TypeScript with auto-generated Supabase types. Catch errors at compile time.',
+  },
+  {
+    icon: Zap,
+    title: 'Modern Stack',
+    description: 'Next.js 16, TypeScript, Supabase, and Tailwind CSS — the best tools for modern web development.',
+  },
+  {
+    icon: Palette,
+    title: 'UI Components',
+    description: 'Beautiful components built with Radix UI and Tailwind. Accessible and customizable.',
+  },
+  {
+    icon: Lock,
+    title: 'Authentication',
+    description: 'Magic links, OAuth providers, and email/password with protected routes — all pre-configured.',
+  },
+  {
+    icon: Database,
+    title: 'Database Ready',
+    description: 'Supabase with Row Level Security, migrations, and seed data — ready for production.',
+  },
+  {
+    icon: ArrowRight,
+    title: 'Fast Deployment',
+    description: 'Deploy to Vercel in minutes. CI/CD, preview deployments, and automatic type generation included.',
+  },
+];
 
-export function HomeHero() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-    );
-
-    async function checkUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-      setIsLoading(false);
-    }
-
-    checkUser();
-
-    // 로그인 상태 변화 실시간 감지
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session?.user);
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
+export default function Page() {
   return (
-    <div className="relative flex flex-col items-center justify-center py-20 text-center">
-      {/* 기존 히어로 내용들... */}
-      
-      <div className="mt-8 flex gap-4">
-        {isLoading ? (
-          <div className="h-10 w-32 animate-pulse rounded-md bg-muted" />
-        ) : isLoggedIn ? (
-          <Button asChild size="lg">
-            <Link href="/dashboard">Go to dashboard</Link>
-          </Button>
-        ) : (
-          <Button asChild size="lg">
-            <Link href="/login">Get started</Link>
-          </Button>
-        )}
+    <div>
+      <Suspense fallback={<div className="min-h-[600px]" />}>
+        <HomeHero />
+      </Suspense>
+      <Separator />
+      <HomeFeatures features={features} />
+      <div className="border-t bg-muted/10">
+        <HomeCTA />
       </div>
     </div>
   );
