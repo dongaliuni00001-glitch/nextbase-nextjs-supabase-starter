@@ -1,7 +1,11 @@
 'use client';
 
-import { Github, Menu } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/supabase-clients/client';
+import type { User } from '@supabase/supabase-js';
+import { Github, Menu, LogOut, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Brand } from '@/components/brand';
 import { Button } from '@/components/ui/button';
@@ -30,6 +34,39 @@ const navigation = [
 ];
 
 export default function Navbar() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function getUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setIsLoading(false);
+    }
+
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    router.push('/');
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur-lg supports-[backdrop-filter]:bg-background/75">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
@@ -69,12 +106,32 @@ export default function Navbar() {
             </Link>
           </Button>
           <ModeToggle />
-          <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild size="sm" className="hidden sm:flex">
-            <Link href="/sign-up">Get started</Link>
-          </Button>
+
+          {isLoading ? (
+            <div className="h-9 w-20 animate-pulse rounded-md bg-muted" />
+          ) : user ? (
+            <div className="hidden items-center gap-2 sm:flex">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/dashboard">
+                  <LayoutDashboard className="size-4" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="size-4" />
+                Sign out
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Button asChild variant="ghost" size="sm" className="hidden sm:flex">
+                <Link href="/login">Sign in</Link>
+              </Button>
+              <Button asChild size="sm" className="hidden sm:flex">
+                <Link href="/sign-up">Get started</Link>
+              </Button>
+            </>
+          )}
 
           <Sheet>
             <SheetTrigger asChild>
@@ -102,16 +159,37 @@ export default function Navbar() {
                 ))}
               </nav>
               <div className="mt-auto grid gap-2 pt-8">
-                <SheetClose asChild>
-                  <Button variant="outline" asChild>
-                    <Link href="/login">Sign in</Link>
-                  </Button>
-                </SheetClose>
-                <SheetClose asChild>
-                  <Button asChild>
-                    <Link href="/sign-up">Get started</Link>
-                  </Button>
-                </SheetClose>
+                {user ? (
+                  <>
+                    <SheetClose asChild>
+                      <Button variant="outline" asChild className="justify-start">
+                        <Link href="/dashboard">
+                          <LayoutDashboard className="size-4 mr-2" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button variant="ghost" className="justify-start text-red-500" onClick={handleSignOut}>
+                        <LogOut className="size-4 mr-2" />
+                        Sign out
+                      </Button>
+                    </SheetClose>
+                  </>
+                ) : (
+                  <>
+                    <SheetClose asChild>
+                      <Button variant="outline" asChild>
+                        <Link href="/login">Sign in</Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button asChild>
+                        <Link href="/sign-up">Get started</Link>
+                      </Button>
+                    </SheetClose>
+                  </>
+                )}
               </div>
             </SheetContent>
           </Sheet>

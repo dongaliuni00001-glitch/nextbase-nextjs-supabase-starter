@@ -30,7 +30,7 @@ export function Login({ next }: { next?: string }) {
   const router = useRouter();
 
   function redirectToDashboard() {
-    router.push(next ? `/auth/callback?next=${next}` : '/dashboard');
+    router.push(next ? `/auth/callback?next=${next}` : '/');
   }
 
   const { execute: executeMagicLink, status: magicLinkStatus } = useAction(
