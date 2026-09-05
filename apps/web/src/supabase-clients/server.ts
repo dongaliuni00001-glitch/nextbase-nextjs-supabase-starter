@@ -2,7 +2,7 @@ import { Database } from '@/lib/database.types';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export async function createClient() {
+export async function createSupabaseClient() {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -26,3 +26,6 @@ export async function createClient() {
     }
   );
 }
+
+// 다른 컴포넌트나 home-hero에서 createClient로 불러와도 호환되도록 별칭(alias) 제공
+export const createClient = createSupabaseClient;
