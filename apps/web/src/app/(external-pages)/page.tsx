@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Database, Lock, Palette, Shield, Zap } from 'lucide-react';
 import { HomeCTA } from './home-cta';
@@ -40,7 +41,9 @@ const features: HomeFeature[] = [
 export default function HomePage() {
   return (
     <div>
-      <HomeHero />
+      <Suspense fallback={<div className="min-h-[600px]" />}>
+        <HomeHero />
+      </Suspense>
       <Separator />
       <HomeFeatures features={features} />
       <div className="border-t bg-muted/10">
