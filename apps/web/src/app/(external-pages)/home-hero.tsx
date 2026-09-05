@@ -24,12 +24,12 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/supabase-clients/server';
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
 export async function HomeHero() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
