@@ -1,16 +1,37 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { cache } from 'react';
+import { createClient } from '@/utils/supabase/server'; //프로젝트의 서버 클라이언트 경로에 맞게 조정
 
-// Only meant to be used in protected pages
-// This makes an extra call to the server to verify the user is still logged in
-// Use sparingly
-export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
-  const supabase = await createSupabaseClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    throw error;
+export const getCachedLoggedInUserClaims = cache(async () => {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      return { sub: null };
+    }
+    return { sub: user.id, ...user };
+  } catch {
+    return { sub: null };
   }
-  return data;
+});
+
+export const getCachedIsUserLoggedIn = cache(async () => {
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub !== null && claims?.sub !== undefined;
+  } catch {
+    return false;
+  }
+});
+
+export const getCachedLoggedInUserId = cache(async () => {
+  try {
+    const claims = await getCachedLoggedInUserClaims();
+    return claims?.sub ?? null;
+  } catch {
+    return null;
+  }
 });
 
 // Only meant to be used in protected pages
