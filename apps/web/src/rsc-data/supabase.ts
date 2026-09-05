@@ -1,14 +1,14 @@
 import { cache } from 'react';
-import { createClient } from '@/utils/supabase/server';
+import { createSupabaseClient } from '@/supabase-clients/server';
 
 export const getCachedLoggedInUserClaims = cache(async () => {
   try {
-    const supabase = createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
+    const supabase = await createSupabaseClient();
+    const { data, error } = await (supabase.auth as any).getClaims?.() || {};
+    if (error || !data?.claims) {
       return { sub: null };
     }
-    return { sub: user.id, ...user };
+    return data.claims;
   } catch {
     return { sub: null };
   }
@@ -34,7 +34,21 @@ export const getCachedLoggedInUserId = cache(async () => {
 
 export const getCachedLoggedInSupabaseUser = cache(async () => {
   try {
-    const supabase = createClient();
+    const supabase = await createSupabaseClient();
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session?.user) {
+      return null;
+    }
+    return data.session.user;
+  } catch {
+    return null;
+  }
+});
+
+// 누락되었던 인증 검증 유저 함수 추가
+export const getCachedLoggedInVerifiedSupabaseUser = cache(async () => {
+  try {
+    const supabase = await createSupabaseClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
       return null;
