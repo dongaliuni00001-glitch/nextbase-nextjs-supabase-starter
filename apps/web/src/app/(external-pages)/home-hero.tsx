@@ -1,7 +1,3 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { createClient } from '@/supabase-clients/client';
 import {
   ArrowRight,
   Check,
@@ -31,36 +27,11 @@ import {
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
-export function HomeHero() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+interface HomeHeroProps {
+  isLoggedIn: boolean;
+}
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    async function checkUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-      setIsLoading(false);
-    }
-
-    checkUser();
-
-    // 로그인/로그아웃 상태 변화 실시간 감지
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session?.user);
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
+export function HomeHero({ isLoggedIn }: HomeHeroProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,var(--color-muted),transparent_45%)]" />
@@ -81,9 +52,7 @@ export function HomeHero() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            {isLoading ? (
-              <div className="h-11 w-36 animate-pulse rounded-md bg-muted" />
-            ) : isLoggedIn ? (
+            {isLoggedIn ? (
               <Button asChild size="lg">
                 <Link href="/dashboard">
                   Go to dashboard
