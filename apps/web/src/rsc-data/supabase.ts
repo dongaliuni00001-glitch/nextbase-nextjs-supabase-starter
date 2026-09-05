@@ -1,16 +1,16 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { cache } from 'react';
-import { createClient } from '@/utils/supabase/server'; //프로젝트의 서버 클라이언트 경로에 맞게 조정
+import { createClient } from '@/utils/supabase/server';
 
 export const getCachedLoggedInUserClaims = cache(async () => {
   try {
     const supabase = createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { session }, error } = await supabase.auth.getSession();
     
-    if (error || !user) {
+    if (error || !session?.user) {
       return { sub: null };
     }
-    return { sub: user.id, ...user };
+    return { sub: session.user.id, ...session.user };
   } catch {
     return { sub: null };
   }
@@ -18,8 +18,9 @@ export const getCachedLoggedInUserClaims = cache(async () => {
 
 export const getCachedIsUserLoggedIn = cache(async () => {
   try {
-    const claims = await getCachedLoggedInUserClaims();
-    return claims?.sub !== null && claims?.sub !== undefined;
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
   } catch {
     return false;
   }
