@@ -24,10 +24,16 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
+import { createClient } from '@/lib/supabase/server';
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
-export function HomeHero() {
+export async function HomeHero() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,var(--color-muted),transparent_45%)]" />
@@ -48,12 +54,21 @@ export function HomeHero() {
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg">
-              <Link href="/sign-up">
-                Get started
-                <ArrowRight aria-hidden="true" />
-              </Link>
-            </Button>
+            {user ? (
+              <Button asChild size="lg">
+                <Link href="/dashboard">
+                  Go to dashboard
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="lg">
+                <Link href="/sign-up">
+                  Get started
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            )}
             <Button asChild size="lg" variant="outline">
               <Link
                 href="https://github.com/imbhargav5/nextbase-nextjs-supabase-starter"
