@@ -1,3 +1,4 @@
+import { createClient } from '@/supabase-clients/server';
 import {
   ArrowRight,
   Check,
@@ -27,11 +28,11 @@ import {
 
 const previewItems = ['Launch checklist', 'Customer notes', 'Product roadmap'];
 
-interface HomeHeroProps {
-  isLoggedIn: boolean;
-}
+export async function HomeHero() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
 
-export function HomeHero({ isLoggedIn }: HomeHeroProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,var(--color-muted),transparent_45%)]" />

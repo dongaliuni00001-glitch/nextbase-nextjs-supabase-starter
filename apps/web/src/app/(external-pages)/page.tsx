@@ -1,9 +1,9 @@
+import { Suspense } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Database, Lock, Palette, Shield, Zap } from 'lucide-react';
 import { HomeCTA } from './home-cta';
 import { HomeFeatures, type HomeFeature } from './home-features';
 import { HomeHero } from './home-hero';
-import { createClient } from '@/supabase-clients/server';
 
 const features: HomeFeature[] = [
   {
@@ -38,15 +38,12 @@ const features: HomeFeature[] = [
   },
 ];
 
-export default async function Page() {
-  // 서버 측에서 안전하게 세션 확인 (대시보드와 동일한 방식)
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const isLoggedIn = !!user;
-
+export default function Page() {
   return (
     <div>
-      <HomeHero isLoggedIn={isLoggedIn} />
+      <Suspense fallback={<div className="min-h-[600px]" />}>
+        <HomeHero />
+      </Suspense>
       <Separator />
       <HomeFeatures features={features} />
       <div className="border-t bg-muted/10">
