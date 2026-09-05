@@ -1,6 +1,5 @@
 import { cache } from 'react';
 import { createClient } from '@/utils/supabase/server';
-import { createSupabaseClient } from '@/supabase-clients/server';
 
 export const getCachedLoggedInUserClaims = cache(async () => {
   try {
@@ -35,12 +34,12 @@ export const getCachedLoggedInUserId = cache(async () => {
 
 export const getCachedLoggedInSupabaseUser = cache(async () => {
   try {
-    const supabase = await createSupabaseClient();
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session?.user) {
+    const supabase = createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
       return null;
     }
-    return data.session.user;
+    return user;
   } catch {
     return null;
   }
