@@ -108,8 +108,8 @@ export function Login({ next }: { next?: string }) {
   if (redirectInProgress) {
     return (
       <RedirectingPleaseWaitCard
-        message="Please wait while we open your protected workspace."
-        heading="Opening your dashboard"
+        message="Please wait while we redirect you."
+        heading="Logging in..."
       />
     );
   }
