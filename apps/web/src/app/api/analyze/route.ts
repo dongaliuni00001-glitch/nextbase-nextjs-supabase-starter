@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const prompt = `다음 자기소개서를 분석하여 지원자의 강점, 보완해야 할 약점, 그리고 면접 대비 피드백을 한국어로 상세히 작성해 주세요:\n\n${resumeText}`;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -27,6 +27,14 @@ export async function POST(req: Request) {
     );
 
     const data = await response.json();
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: data.error?.message || 'Gemini API 호출 중 오류가 발생했습니다.' },
+        { status: response.status }
+      );
+    }
+
     const analysisResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '분석 결과를 생성하지 못했습니다.';
 
     return NextResponse.json({ result: analysisResult });
