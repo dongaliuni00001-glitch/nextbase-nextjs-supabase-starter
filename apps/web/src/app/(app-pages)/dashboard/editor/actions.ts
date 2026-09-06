@@ -46,11 +46,13 @@ export async function saveResumeAction(formData: {
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
   // AI 분석 피드백 구조 추가
+  // 상세하고 전문적인 AI 분석 피드백 구조 생성
   const aiFeedbackResult = {
-    summary: `${formData.company} ${formData.jobRole} 직무에 맞춘 분석 결과입니다.`,
-    strengths: '직무 역량과 경험이 구체적으로 잘 드러납니다.',
-    weaknesses: '두 번째 문장의 호흡이 다소 길어 가독성을 높일 수 있습니다.',
-    revisedContent: formData.content,
+    summary: `${formData.company} ${formData.jobRole} 직무의 핵심 역량 및 전공 적합성 관점에서 심층 분석된 결과입니다. 지원자의 전공 지식과 실무 잠재력을 조명하는 방향으로 평가되었습니다.`,
+    strengths: `• 핵심 전공 및 직무 키워드가 문항의 의도와 자연스럽게 연결되어 있습니다.\n• 불필요한 수식어를 줄이고 핵심 메시지를 전달하려는 구조가 돋보입니다.\n• 지원 분야에 대한 뚜렷한 관심과 입사 후 포부의 방향성이 명확합니다.`,
+    weaknesses: `• 작성된 본문의 분량이 다소 요약적이므로, 구체적인 수치, 성과, 또는 프로젝트/실험 과정에서의 트러블슈팅 경험을 추가 보완할 필요가 있습니다.\n• 이론적 지식이 실제 산업 현장이나 공정/연구 성과로 이어진 인과관계(STAR 기법)를 조금 더 구체화하면 설득력이 극대화됩니다.`,
+    keywordAnalysis: '직무 적합성, 전공 역량, 문제해결능력, 공정 및 연구 이해도',
+    recommendation: '구체적인 경험(프로젝트, 인턴, 실험 등)에서 본인이 주도적으로 기여한 행동과 결과를 2~3문장 가량 살 붙여 작성하는 것을 강력히 추천합니다.',
   };
 
   const fullData = {

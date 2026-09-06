@@ -71,23 +71,39 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base text-primary">✨ AI 심층 분석 및 첨삭 피드백</CardTitle>
+          <CardTitle className="text-base text-primary">✨ AI 심층 분석 및 첨삭 리포트</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase">총평</h4>
-            <p className="text-sm">{bodyData.aiFeedback?.summary || '분석 결과가 없습니다.'}</p>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">1. 종합 평가 (Summary)</h4>
+            <p className="text-sm leading-relaxed rounded-md bg-muted/40 p-3">{bodyData.aiFeedback?.summary || '분석 결과가 없습니다.'}</p>
           </div>
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase">강점</h4>
-            <p className="text-sm">{bodyData.aiFeedback?.strengths || '-'}</p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 rounded-md border p-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-emerald-600">💪 주요 강점 (Strengths)</h4>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{bodyData.aiFeedback?.strengths || '-'}</p>
+            </div>
+            <div className="space-y-2 rounded-md border p-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-600">⚠️ 보완점 및 개선 제안 (Weaknesses)</h4>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{bodyData.aiFeedback?.weaknesses || '-'}</p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <h4 className="text-xs font-semibold text-muted-foreground uppercase">보완점 및 개선 제안</h4>
-            <p className="text-sm">{bodyData.aiFeedback?.weaknesses || '-'}</p>
+
+          <div className="space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">🔑 핵심 키워드 매칭</h4>
+            <div className="flex flex-wrap gap-2">
+              {bodyData.aiFeedback?.keywordAnalysis?.split(', ').map((keyword: string, idx: number) => (
+                <span key={idx} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  #{keyword}
+                </span>
+              )) || '-'}
+            </div>
+          </div>
+
+          <div className="space-y-2 rounded-md bg-primary/5 p-4 border border-primary/20">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-primary">💡 합격을 위한 전문가 코칭</h4>
+            <p className="text-sm text-foreground/90">{bodyData.aiFeedback?.recommendation || '-'}</p>
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-}
