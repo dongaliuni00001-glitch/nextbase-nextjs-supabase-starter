@@ -24,9 +24,15 @@ export default function EditorPage() {
     try {
       const result = await saveResumeAction({ company, jobRole, questionTitle, content });
 
-      // 서버 액션 처리 결과가 실패인 경우
-      if (!result || !result.success) {
-        alert(`저장 실패 원인: ${result?.error || '알 수 없는 서버 오류'}`);
+      // next-safe-action 규격에 맞춘 서버 에러 처리
+      if (result?.serverError) {
+        alert(`저장 실패: ${result.serverError}`);
+        return;
+      }
+
+      // 유효성 검사 에러 처리
+      if (result?.validationErrors) {
+        alert('입력값을 다시 확인해주세요.');
         return;
       }
       
