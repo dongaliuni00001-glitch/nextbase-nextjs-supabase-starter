@@ -107,3 +107,6 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
