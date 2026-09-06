@@ -46,13 +46,14 @@ export async function saveResumeAction(formData: {
 
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
-  // 2. private_items 테이블에 데이터 삽입 (name, title 모두 포함)
+  // 2. private_items 테이블에 데이터 삽입 (name, title, description 모두 포함)
   const { data, error } = await supabase
     .from('private_items')
     .insert({
       user_id: user.id,
-      name: itemTitle, // 필수 not-null 컬럼 대응
+      name: itemTitle,
       title: itemTitle,
+      description: formData.content, // 필수 not-null 컬럼 대응
       body: JSON.stringify(formData),
     })
     .select();
