@@ -15,9 +15,8 @@ const resumeSchema = z.object({
 
 export const saveResumeAction = authActionClient
   .schema(resumeSchema)
-  .action(async ({ parsedInput, ctx }) => {
+  .action(async ({ parsedInput }) => {
     const { company, jobRole, questionTitle, content } = parsedInput;
-    const { userId } = ctx;
 
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -41,10 +40,19 @@ export const saveResumeAction = authActionClient
       }
     );
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.');
+    }
+
     const { data, error } = await supabase
       .from('private_items')
       .insert({
-        user_id: userId,
+        user_id: user.id,
         title: `[${company}] ${jobRole} - ${questionTitle}`,
         body: JSON.stringify({
           company,
@@ -56,7 +64,7 @@ export const saveResumeAction = authActionClient
       .select();
 
     if (error) {
-      throw new Error(`저장 실패: ${error.message}`);
+      throw new Error(`저장실패: ${error.message}`);
     }
 
     revalidatePath('/dashboard');
