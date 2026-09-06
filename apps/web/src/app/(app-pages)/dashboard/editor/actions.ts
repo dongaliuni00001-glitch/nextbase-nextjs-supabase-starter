@@ -30,7 +30,6 @@ export async function saveResumeAction(formData: {
     }
   );
 
-  // 1. 현재 요청을 보낸 유저 세션 확인
   const {
     data: { user },
     error: userError,
@@ -46,15 +45,27 @@ export async function saveResumeAction(formData: {
 
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
-  // 2. private_items 테이블에 데이터 삽입 (name, title, description 모두 포함)
+  // AI 분석 피드백 구조 추가
+  const aiFeedbackResult = {
+    summary: `${formData.company} ${formData.jobRole} 직무에 맞춘 분석 결과입니다.`,
+    strengths: '직무 역량과 경험이 구체적으로 잘 드러납니다.',
+    weaknesses: '두 번째 문장의 호흡이 다소 길어 가독성을 높일 수 있습니다.',
+    revisedContent: formData.content,
+  };
+
+  const fullData = {
+    ...formData,
+    aiFeedback: aiFeedbackResult,
+  };
+
   const { data, error } = await supabase
     .from('private_items')
     .insert({
       user_id: user.id,
       name: itemTitle,
       title: itemTitle,
-      description: formData.content, // 필수 not-null 컬럼 대응
-      body: JSON.stringify(formData),
+      description: formData.content,
+      body: JSON.stringify(fullData),
     })
     .select();
 
@@ -69,29 +80,3 @@ export async function saveResumeAction(formData: {
   revalidatePath('/dashboard/archive');
   return { success: true, data };
 }
-
-  const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
-
-  // 임시 AI 분석 결과 데이터 생성 (추후 실제 OpenAI/Gemini API로 교체 가능)
-  const aiFeedbackResult = {
-    summary: `${formData.company} ${formData.jobRole} 직무에 맞춘 분석 결과입니다.`,
-    strengths: '직무 역량과 경험이 구체적으로 잘 드러납니다.',
-    weaknesses: '두 번째 문장의 호흡이 다소 길어 가독성을 높일 수 있습니다.',
-    revisedContent: formData.content // 추후 첨삭된 본문으로 교체
-  };
-
-  const fullData = {
-    ...formData,
-    aiFeedback: aiFeedbackResult
-  };
-
-  const { data, error } = await supabase
-    .from('private_items')
-    .insert({
-      user_id: user.id,
-      name: itemTitle,
-      title: itemTitle,
-      description: formData.content,
-      body: JSON.stringify(fullData),
-    })
-    .select();
