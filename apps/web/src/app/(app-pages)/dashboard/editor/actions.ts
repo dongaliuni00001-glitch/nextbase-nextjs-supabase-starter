@@ -45,6 +45,7 @@ export async function saveResumeAction(formData: {
 
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
+  // 기본 Fallback 데이터
   let aiFeedbackResult = {
     summary: `${formData.company} ${formData.jobRole} 직무 맞춤형 기본 분석 결과입니다.`,
     strengths: '직무 역량과 전공 적합성이 돋보입니다.',
@@ -55,7 +56,9 @@ export async function saveResumeAction(formData: {
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
+    if (!apiKey) {
+      console.warn('GEMINI_API_KEY가 설정되지 않았습니다.');
+    } else {
       const prompt = `
 당신은 전문 채용 담당자이자 대기업 합격 자소서 컨설턴트입니다. 
 지원자가 작성한 아래의 자기소개서를 분석하여 반드시 아래의 JSON 형식으로만 피드백을 제공해주세요. (Markdown 코드블록이나 다른 텍스트를 포함하지 말고 순수 JSON만 출력하세요)
@@ -79,7 +82,7 @@ JSON 구조:
 `;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -89,16 +92,21 @@ JSON 구조:
         }
       );
 
-      const json = await response.json();
-      const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Gemini API 응답 에러:', response.status, errorBody);
+      } else {
+        const json = await response.json();
+        const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (rawText) {
-        const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        aiFeedbackResult = JSON.parse(cleanedText);
+        if (rawText) {
+          const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+          aiFeedbackResult = JSON.parse(cleanedText);
+        }
       }
     }
   } catch (err) {
-    console.error('Gemini API 연동 중 오류 발생:', err);
+    console.error('Gemini API 연동 중 예외 발생:', err);
   }
 
   const fullData = {
