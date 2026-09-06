@@ -4,10 +4,12 @@ import type { User } from '@supabase/supabase-js';
 import {
   ChevronUp,
   ExternalLink,
+  FileText,
+  FolderArchive,
   LayoutDashboard,
-  LockKeyhole,
   LogOut,
   Plus,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -37,8 +39,10 @@ import {
 import { signOutAction } from '@/data/auth/sign-out';
 
 const navigationItems = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Private items', url: '/private-items', icon: LockKeyhole },
+  { title: '대시보드', url: '/dashboard', icon: LayoutDashboard },
+  { title: '자소서 작성·첨삭', url: '/dashboard/editor', icon: FileText },
+  { title: '보관함 및 이력', url: '/dashboard/archive', icon: FolderArchive },
+  { title: '설정 및 보안', url: '/dashboard/settings', icon: Settings },
 ];
 
 export function AppSidebarContent({ user }: { user: User }) {
@@ -68,11 +72,11 @@ export function AppSidebarContent({ user }: { user: User }) {
     <>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupAction asChild title="Create private item">
-            <Link href="/dashboard/new">
+          <SidebarGroupLabel>커리어 유틸리티</SidebarGroupLabel>
+          <SidebarGroupAction asChild title="새 자소서 작성">
+            <Link href="/dashboard/editor">
               <Plus aria-hidden="true" />
-              <span className="sr-only">Create private item</span>
+              <span className="sr-only">새 자소서 작성</span>
             </Link>
           </SidebarGroupAction>
           <SidebarGroupContent>
@@ -80,7 +84,7 @@ export function AppSidebarContent({ user }: { user: User }) {
               {navigationItems.map((item) => {
                 const isActive =
                   pathname === item.url ||
-                  (item.url === '/private-items' && pathname.startsWith('/private-item/'));
+                  (item.url !== '/dashboard' && pathname.startsWith(item.url));
                 const Icon = item.icon;
 
                 return (
