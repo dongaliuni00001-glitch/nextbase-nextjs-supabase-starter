@@ -45,15 +45,64 @@ export async function saveResumeAction(formData: {
 
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
-  // AI 분석 피드백 구조 추가
-  // 상세하고 전문적인 AI 분석 피드백 구조 생성
-  const aiFeedbackResult = {
-    summary: `${formData.company} ${formData.jobRole} 직무의 핵심 역량 및 전공 적합성 관점에서 심층 분석된 결과입니다. 지원자의 전공 지식과 실무 잠재력을 조명하는 방향으로 평가되었습니다.`,
-    strengths: `• 핵심 전공 및 직무 키워드가 문항의 의도와 자연스럽게 연결되어 있습니다.\n• 불필요한 수식어를 줄이고 핵심 메시지를 전달하려는 구조가 돋보입니다.\n• 지원 분야에 대한 뚜렷한 관심과 입사 후 포부의 방향성이 명확합니다.`,
-    weaknesses: `• 작성된 본문의 분량이 다소 요약적이므로, 구체적인 수치, 성과, 또는 프로젝트/실험 과정에서의 트러블슈팅 경험을 추가 보완할 필요가 있습니다.\n• 이론적 지식이 실제 산업 현장이나 공정/연구 성과로 이어진 인과관계(STAR 기법)를 조금 더 구체화하면 설득력이 극대화됩니다.`,
-    keywordAnalysis: '직무 적합성, 전공 역량, 문제해결능력, 공정 및 연구 이해도',
-    recommendation: '구체적인 경험(프로젝트, 인턴, 실험 등)에서 본인이 주도적으로 기여한 행동과 결과를 2~3문장 가량 살 붙여 작성하는 것을 강력히 추천합니다.',
+  // 실제 Gemini API 연동을 통한 실시간 분석 피드백 생성
+  let aiFeedbackResult = {
+    summary: `${formData.company} ${formData.jobRole} 직무 맞춤형 기본 분석 결과입니다.`,
+    strengths: '직무 역량과 전공 적합성이 돋보입니다.',
+    weaknesses: '구체적인 수치나 성과를 보완하면 더욱 완성도 높은 자소서가 됩니다.',
+    keywordAnalysis: '직무역량, 전공적합성, 문제해결',
+    recommendation: '구체적인 경험과 본인의 기여도를 명확히 작성해 보세요.',
   };
+
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      const prompt = `
+당신은 전문 채용 담당자이자 대기업 합격 자소서 컨설턴트입니다. 
+지원자가 작성한 아래의 자기소개서를 분석하여 반드시 아래의 JSON 형식으로만 피드백을 제공해주세요. (Markdown 코드블록이나 다른 텍스트를 포함하지 말고 순수 JSON만 출력하세요)
+
+[지원 정보]
+기업명: ${formData.company}
+지원 직무: ${formData.jobRole}
+문항/제목: ${formData.questionTitle}
+
+[자기소개서 본문]
+${formData.content}
+
+JSON 구조:
+{
+  "summary": "총평 (지원 직무 관점에서의 종합 평가, 2~3문장)",
+  "strengths": "주요 강점 (불릿 포인트 형식으로 2~3줄)",
+  "weaknesses": "보완점 및 개선 제안 (불릿 포인트 형식으로 2~3줄)",
+  "keywordAnalysis": "핵심 키워드 3~4개를 쉼표(,)로 구분하여",
+  "recommendation": "합격을 위한 전문가 코칭 조언 (1~2문장)"
+}
+`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      const json = await response.json();
+      const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (rawText) {
+        // 마크다운 코드블록(```json ... ```) 제거 처리
+        const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        aiFeedbackResult = JSON.parse(cleanedText);
+      }
+    }
+  } catch (err) {
+    console.error('Gemini API 연동 중 오류 발생:', err);
+    // API 호출 실패 시 기본 fallback 데이터 유지
+  }
 
   const fullData = {
     ...formData,
@@ -81,50 +130,4 @@ export async function saveResumeAction(formData: {
 
   revalidatePath('/dashboard/archive');
   return { success: true, data };
-}
-
-// 저장된 이력서 삭제 기능
-
-export async function deleteResumeAction(id: string) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return {
-      success: false,
-      message: '인증 실패: 로그인 정보를 확인할 수 없습니다.',
-    };
-  }
-
-  const { error } = await supabase
-    .from('private_items')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', user.id);
-
-  if (error) {
-    return {
-      success: false,
-      message: `삭제 실패: ${error.message}`,
-    };
-  }
-
-  revalidatePath('/dashboard/archive');
-  return { success: true };
 }
