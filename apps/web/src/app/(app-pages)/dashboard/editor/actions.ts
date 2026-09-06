@@ -45,7 +45,6 @@ export async function saveResumeAction(formData: {
 
   const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
 
-  // 실제 Gemini API 연동을 통한 실시간 분석 피드백 생성
   let aiFeedbackResult = {
     summary: `${formData.company} ${formData.jobRole} 직무 맞춤형 기본 분석 결과입니다.`,
     strengths: '직무 역량과 전공 적합성이 돋보입니다.',
@@ -94,14 +93,12 @@ JSON 구조:
       const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (rawText) {
-        // 마크다운 코드블록(```json ... ```) 제거 처리
         const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
         aiFeedbackResult = JSON.parse(cleanedText);
       }
     }
   } catch (err) {
     console.error('Gemini API 연동 중 오류 발생:', err);
-    // API 호출 실패 시 기본 fallback 데이터 유지
   }
 
   const fullData = {
@@ -124,10 +121,54 @@ JSON 구조:
     return {
       success: false,
       step: 'DB_INSERT',
-      message: `DB 저장 실패 [코드: ${error.code}]: ${error.message} (상세: ${error.details})`,
+      message: `DB 저장 실패 [코드: ${error.code}]: ${error.message}`,
     };
   }
 
   revalidatePath('/dashboard/archive');
   return { success: true, data };
+}
+
+export async function deleteResumeAction(id: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      success: false,
+      message: '인증 실패: 로그인 정보를 확인할 수 없습니다.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('private_items')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return {
+      success: false,
+      message: `삭제 실패: ${error.message}`,
+    };
+  }
+
+  revalidatePath('/dashboard/archive');
+  return { success: true };
 }
