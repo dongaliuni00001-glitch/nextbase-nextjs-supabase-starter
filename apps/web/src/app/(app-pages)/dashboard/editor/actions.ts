@@ -40,16 +40,19 @@ export async function saveResumeAction(formData: {
     return {
       success: false,
       step: 'AUTH_CHECK',
-      message: `인증 실패: ${userError?.message || '로그인 세션을 찾을 수 없습니다. (user가 null입니다)'}`,
+      message: `인증 실패: ${userError?.message || '로그인 세션을 찾을 수 없습니다.'}`,
     };
   }
 
-  // 2. private_items 테이블에 데이터 삽입
+  const itemTitle = `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`;
+
+  // 2. private_items 테이블에 데이터 삽입 (name, title 모두 포함)
   const { data, error } = await supabase
     .from('private_items')
     .insert({
       user_id: user.id,
-      title: `[${formData.company}] ${formData.jobRole} - ${formData.questionTitle}`,
+      name: itemTitle, // 필수 not-null 컬럼 대응
+      title: itemTitle,
       body: JSON.stringify(formData),
     })
     .select();
