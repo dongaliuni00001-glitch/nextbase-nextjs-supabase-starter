@@ -24,14 +24,9 @@ export default function EditorPage() {
     try {
       const result = await saveResumeAction({ company, jobRole, questionTitle, content });
 
-      // 서버에서 반환한 구체적인 에러 메시지 출력
-      if (result?.data && !result.data.success) {
-        alert(`저장 실패 원인: ${result.data.error}`);
-        return;
-      }
-
-      if (result?.serverError) {
-        alert(`서버 에러: ${result.serverError}`);
+      // 서버 액션 처리 결과가 실패인 경우
+      if (!result || !result.success) {
+        alert(`저장 실패 원인: ${result?.error || '알 수 없는 서버 오류'}`);
         return;
       }
       
