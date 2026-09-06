@@ -22,10 +22,22 @@ export default function EditorPage() {
     setIsSubmitting(true);
 
     try {
-      // 1. DB에 임시/작성본 저장
-      await saveResumeAction({ company, jobRole, questionTitle, content });
+      // 1. 서버 액션 호출 결과(result) 받기
+      const result = await saveResumeAction({ company, jobRole, questionTitle, content });
+
+      // 2. 서버 측 에러(인증 실패, DB 삽입 실패 등) 확인
+      if (result?.serverError) {
+        alert(`저장 실패: ${result.serverError}`);
+        return;
+      }
+
+      // 3. 유효성 검사 에러 확인
+      if (result?.validationErrors) {
+        alert('입력값을 다시 확인해주세요.');
+        return;
+      }
       
-      // 2. AI 분석 API 호출 (추후 연동) 혹은 완료 알림 후 보관함 이동
+      // 4. 정상 저장 완료 시 이동
       alert('성공적으로 저장되었습니다! AI 심층 분석 페이지로 이동합니다.');
       router.push('/dashboard/archive');
     } catch (error: any) {
