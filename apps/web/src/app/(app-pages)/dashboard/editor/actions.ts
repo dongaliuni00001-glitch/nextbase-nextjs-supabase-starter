@@ -16,61 +16,56 @@ const resumeSchema = z.object({
 export const saveResumeAction = authActionClient
   .schema(resumeSchema)
   .action(async ({ parsedInput }) => {
-    const { company, jobRole, questionTitle, content } = parsedInput;
+    try {
+      const { company, jobRole, questionTitle, content } = parsedInput;
 
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
+      const cookieStore = await cookies();
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return cookieStore.getAll();
+            },
+            setAll(cookiesToSet) {
+              try {
+                cookiesToSet.forEach(({ name, value, options }) =>
+                  cookieStore.set(name, value, options)
+                );
+              } catch {}
+            },
           },
-          setAll(cookiesToSet) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // Server Component context fallback
-            }
-          },
-        },
+        }
+      );
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        return { success: false, error: `인증 실패: ${userError?.message || '로그인 세션을 찾을 수 없습니다.'}` };
       }
-    );
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('private_items')
+        .insert({
+          user_id: user.id,
+          title: `[${company}] ${jobRole} - ${questionTitle}`,
+          body: JSON.stringify({ company, jobRole, questionTitle, content }),
+        })
+        .select();
 
-    if (userError || !user) {
-      console.error('Supabase Auth Error:', userError);
-      throw new Error(`인증 실패: ${userError?.message || '로그인 세션을 찾을 수 없습니다.'}`);
+      if (error) {
+        return { success: false, error: `DB 저장 실패: ${error.message} (코드: ${error.code})` };
+      }
+
+      revalidatePath('/dashboard');
+      revalidatePath('/dashboard/archive');
+
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: `예외 발생: ${err.message}` };
     }
-
-    const { data, error } = await supabase
-      .from('private_items')
-      .insert({
-        user_id: user.id,
-        title: `[${company}] ${jobRole} - ${questionTitle}`,
-        body: JSON.stringify({
-          company,
-          jobRole,
-          questionTitle,
-          content,
-        }),
-      })
-      .select();
-
-    if (error) {
-      console.error('Supabase Insert Error:', error);
-      throw new Error(`저장 실패: ${error.message}`);
-    }
-
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/archive');
-
-    return { success: true, data };
   });
