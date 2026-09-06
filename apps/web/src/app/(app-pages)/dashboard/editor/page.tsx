@@ -6,8 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { saveResumeAction } from './actions';
+import { useRouter } from 'next/navigation';
 
 export default function EditorPage() {
+  const router = useRouter();
   const [company, setCompany] = useState('');
   const [jobRole, setJobRole] = useState('');
   const [questionTitle, setQuestionTitle] = useState('');
@@ -17,11 +20,19 @@ export default function EditorPage() {
   const handleAiAnalysis = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // TODO: AI 분석 API 연동 로직 구현
-    setTimeout(() => {
-      alert('AI 분석 요청이 전송되었습니다! (연동 준비 중)');
+
+    try {
+      // 1. DB에 임시/작성본 저장
+      await saveResumeAction({ company, jobRole, questionTitle, content });
+      
+      // 2. AI 분석 API 호출 (추후 연동) 혹은 완료 알림 후 보관함 이동
+      alert('성공적으로 저장되었습니다! AI 심층 분석 페이지로 이동합니다.');
+      router.push('/dashboard/archive');
+    } catch (error: any) {
+      alert(`오류가 발생했습니다: ${error.message}`);
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -34,7 +45,6 @@ export default function EditorPage() {
       </div>
 
       <form onSubmit={handleAiAnalysis} className="grid gap-6 md:grid-cols-3">
-        {/* 좌측: 지원 메타데이터 및 소스 선택 (2컬럼) */}
         <div className="space-y-6 md:col-span-1">
           <Card>
             <CardHeader>
@@ -82,7 +92,7 @@ export default function EditorPage() {
               <div className="space-y-2">
                 <Label>프로젝트/경력 모듈 불러오기</Label>
                 <div className="rounded-md border p-3 text-xs text-muted-foreground">
-                  연동된 프로젝트 경력이 없습니다. (설정 또는 보관함에서 추가 가능)
+                  연동된 프로젝트 경력이 없습니다.
                 </div>
               </div>
               <div className="space-y-2">
@@ -93,7 +103,6 @@ export default function EditorPage() {
           </Card>
         </div>
 
-        {/* 우측: 본문 에디터 및 분석 요청 (4컬럼) */}
         <Card className="flex flex-col md:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">3. 자기소개서 본문 작성</CardTitle>
@@ -119,7 +128,7 @@ export default function EditorPage() {
               임시 저장
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'AI 분석 중...' : '✨ AI 심층 분석 및 첨삭 요청'}
+              {isSubmitting ? '저장 및 분석 요청 중...' : '✨ AI 심층 분석 및 첨삭 요청'}
             </Button>
           </CardFooter>
         </Card>
