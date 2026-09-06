@@ -100,7 +100,7 @@ export default async function ArchivePage() {
                 <CardFooter className="flex items-center justify-between border-t px-6 py-3 text-xs text-muted-foreground">
                   <span>직무: {bodyData.jobRole || '미지정'}</span>
                   <Link
-                    href={`/dashboard/editor?id=${item.id}`}
+                    href={`/dashboard/analysis/${item.id}`}
                     className="font-medium text-primary hover:underline"
                   >
                     상세보기 &rarr;
