@@ -68,27 +68,26 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base text-primary">✨ AI 심층 분석 및 첨삭 피드백</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase">총평</h4>
+            <p className="text-sm">{bodyData.aiFeedback?.summary || '분석 결과가 없습니다.'}</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase">강점</h4>
+            <p className="text-sm">{bodyData.aiFeedback?.strengths || '-'}</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase">보완점 및 개선 제안</h4>
+            <p className="text-sm">{bodyData.aiFeedback?.weaknesses || '-'}</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-{/* 본문 아래에 AI 분석 결과 카드 추가 */}
-<Card className="mt-6">
-  <CardHeader>
-    <CardTitle className="text-base text-primary">✨ AI 심층 분석 및 첨삭 피드백</CardTitle>
-  </CardHeader>
-  <CardContent className="space-y-4">
-    <div className="space-y-1">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase">총평</h4>
-      <p className="text-sm">{bodyData.aiFeedback?.summary || '분석 결과가 없습니다.'}</p>
-    </div>
-    <div className="space-y-1">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase">강점</h4>
-      <p className="text-sm">{bodyData.aiFeedback?.strengths || '-'}</p>
-    </div>
-    <div className="space-y-1">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase">보완점 및 개선 제안</h4>
-      <p className="text-sm">{bodyData.aiFeedback?.weaknesses || '-'}</p>
-    </div>
-  </CardContent>
-</Card>
