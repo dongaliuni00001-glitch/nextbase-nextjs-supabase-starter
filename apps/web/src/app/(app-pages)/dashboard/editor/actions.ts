@@ -82,3 +82,49 @@ export async function saveResumeAction(formData: {
   revalidatePath('/dashboard/archive');
   return { success: true, data };
 }
+
+// 저장된 이력서 삭제 기능
+
+export async function deleteResumeAction(id: string) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      success: false,
+      message: '인증 실패: 로그인 정보를 확인할 수 없습니다.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('private_items')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    return {
+      success: false,
+      message: `삭제 실패: ${error.message}`,
+    };
+  }
+
+  revalidatePath('/dashboard/archive');
+  return { success: true };
+}
