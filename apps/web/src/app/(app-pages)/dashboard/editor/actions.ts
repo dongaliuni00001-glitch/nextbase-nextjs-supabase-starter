@@ -46,7 +46,8 @@ export const saveResumeAction = authActionClient
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      throw new Error('로그인 정보가 유효하지 않습니다. 다시 로그인해 주세요.');
+      console.error('Supabase Auth Error:', userError);
+      throw new Error(`인증 실패: ${userError?.message || '로그인 세션을 찾을 수 없습니다.'}`);
     }
 
     const { data, error } = await supabase
@@ -64,7 +65,8 @@ export const saveResumeAction = authActionClient
       .select();
 
     if (error) {
-      throw new Error(`저장실패: ${error.message}`);
+      console.error('Supabase Insert Error:', error);
+      throw new Error(`저장 실패: ${error.message}`);
     }
 
     revalidatePath('/dashboard');
