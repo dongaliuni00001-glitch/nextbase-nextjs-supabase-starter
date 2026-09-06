@@ -24,22 +24,15 @@ export default function EditorPage() {
     try {
       const result = await saveResumeAction({ company, jobRole, questionTitle, content });
 
-      // next-safe-action 규격에 맞춘 서버 에러 처리
-      if (result?.serverError) {
-        alert(`저장 실패: ${result.serverError}`);
-        return;
-      }
-
-      // 유효성 검사 에러 처리
-      if (result?.validationErrors) {
-        alert('입력값을 다시 확인해주세요.');
+      if (!result.success) {
+        alert(`[${result.step}] ${result.message}`);
         return;
       }
       
       alert('성공적으로 저장되었습니다! AI 심층 분석 페이지로 이동합니다.');
       router.push('/dashboard/archive');
     } catch (error: any) {
-      alert(`오류가 발생했습니다: ${error.message}`);
+      alert(`예외 발생: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
