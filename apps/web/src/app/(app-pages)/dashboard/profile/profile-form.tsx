@@ -1,21 +1,6 @@
 'use client';
 
-function getSupabase() {
-  if (!supabaseInstance) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      alert('Supabase 환경변수가 설정되지 않았습니다. .env.local 파일을 확인하고 개발 서버를 재시작해주세요.');
-      throw new Error('Supabase URL and Anon Key are required.');
-    }
-
-    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
-  }
-  return supabaseInstance;
-}
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
@@ -33,10 +18,15 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 
 function getSupabase() {
   if (!supabaseInstance) {
-    supabaseInstance = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL and Anon Key are required.');
+      throw new Error('Supabase URL and Anon Key are required.');
+    }
+
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
   }
   return supabaseInstance;
 }
@@ -44,8 +34,14 @@ function getSupabase() {
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const router = useRouter();
   
-  // 데이터가 없거나 이름이 비어있으면 수정 모드, 이미 등록되어 있으면 조회(요약) 모드로 시작
+  const [currentProfile, setCurrentProfile] = useState(profile || {});
   const [isEditing, setIsEditing] = useState(!profile?.full_name);
+
+  useEffect(() => {
+    if (profile) {
+      setCurrentProfile(profile);
+    }
+  }, [profile]);
 
   const [gender, setGender] = useState(profile?.gender || '');
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
@@ -93,9 +89,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     e.preventDefault();
     setIsLoading(true);
 
-    const supabase = getSupabase();
-
     try {
+      const supabase = getSupabase();
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
 
@@ -106,7 +101,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       }
 
       const formData = new FormData(e.currentTarget);
-      let avatar_url = profile?.avatar_url || '';
+      let avatar_url = currentProfile?.avatar_url || '';
 
       if (avatarFile) {
         const avatarPath = `${userId}/avatar/${Date.now()}_${avatarFile.name}`;
@@ -156,8 +151,27 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       if (result && result.success === false) {
         alert(`저장 실패: ${result.error}`);
       } else {
+        const newProfileData = {
+          ...currentProfile,
+          full_name: formData.get('full_name'),
+          gender: formData.get('gender'),
+          birth_date: formData.get('birth_date'),
+          birth_type: formData.get('birth_type'),
+          desired_location: formData.get('desired_location'),
+          university: formData.get('university'),
+          major: formData.get('major'),
+          desired_role: formData.get('desired_role'),
+          desired_industry: formData.get('desired_industry'),
+          career_summary: formData.get('career_summary'),
+          avatar_url: avatar_url,
+          certifications: updatedCertifications,
+          military_service: militaryServices,
+          portfolios: portfolios,
+        };
+        
+        setCurrentProfile(newProfileData);
         alert('프로필이 성공적으로 저장되었습니다!');
-        setIsEditing(false); // 저장 성공 시 요약(조회) 화면으로 전환
+        setIsEditing(false);
         router.refresh();
       }
     } catch (error: any) {
@@ -186,31 +200,31 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         {/* 기본 정보 */}
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="w-32 h-40 border rounded-md overflow-hidden bg-muted flex items-center justify-center shadow-inner">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="증명사진" className="w-full h-full object-cover" />
+            {currentProfile?.avatar_url ? (
+              <img src={currentProfile.avatar_url} alt="증명사진" className="w-full h-full object-cover" />
             ) : (
               <span className="text-xs text-muted-foreground text-center">사진 없음</span>
             )}
           </div>
           <div className="space-y-2 flex-1">
-            <h3 className="text-2xl font-semibold">{profile?.full_name || '이름 미등록'}</h3>
-            <p className="text-sm text-muted-foreground">성별: {profile?.gender || '미입력'}</p>
-            <p className="text-sm text-muted-foreground">생년월일: {profile?.birth_date ? `${profile.birth_date} (${profile.birth_type || '양력'})` : '미입력'}</p>
-            <p className="text-sm text-muted-foreground">거주 지역: {profile?.desired_location || '미입력'}</p>
+            <h3 className="text-2xl font-semibold">{currentProfile?.full_name || '이름 미등록'}</h3>
+            <p className="text-sm text-muted-foreground">성별: {currentProfile?.gender || '미입력'}</p>
+            <p className="text-sm text-muted-foreground">생년월일: {currentProfile?.birth_date ? `${currentProfile.birth_date} (${currentProfile.birth_type || '양력'})` : '미입력'}</p>
+            <p className="text-sm text-muted-foreground">거주 지역: {currentProfile?.desired_location || '미입력'}</p>
           </div>
         </div>
 
         {/* 학력 정보 */}
         <div className="space-y-2 border-t pt-4">
           <h4 className="font-semibold text-md">학력 정보</h4>
-          <p className="text-sm">대학교: {profile?.university || '미입력'} | 전공: {profile?.major || '미입력'}</p>
+          <p className="text-sm">대학교: {currentProfile?.university || '미입력'} | 전공: {currentProfile?.major || '미입력'}</p>
         </div>
 
         {/* 병역 사항 */}
-        {profile?.military_service && profile.military_service.length > 0 && (
+        {currentProfile?.military_service && currentProfile.military_service.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">병역 사항</h4>
-            {profile.military_service.map((m: any, idx: number) => (
+            {currentProfile.military_service.map((m: any, idx: number) => (
               <div key={idx} className="text-sm bg-muted/20 p-2 rounded">
                 {m.branch} / {m.rank} / {m.dischargeType} ({m.startMonth || '시작일 미상'} ~ {m.endMonth || '종료일 미상'})
               </div>
@@ -219,11 +233,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         )}
 
         {/* 자격증 */}
-        {profile?.certifications && profile.certifications.length > 0 && (
+        {currentProfile?.certifications && currentProfile.certifications.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">보유 자격증</h4>
             <ul className="list-disc list-inside text-sm space-y-1">
-              {profile.certifications.map((c: any, idx: number) => (
+              {currentProfile.certifications.map((c: any, idx: number) => (
                 <li key={idx}>
                   {c.name} ({c.issuer} - {c.date}) {c.proofUrl && <a href={c.proofUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline ml-2">[증빙서류]</a>}
                 </li>
@@ -233,11 +247,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         )}
 
         {/* 포트폴리오 */}
-        {profile?.portfolios && profile.portfolios.length > 0 && (
+        {currentProfile?.portfolios && currentProfile.portfolios.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">포트폴리오 및 링크</h4>
             <div className="space-y-2">
-              {profile.portfolios.map((p: any, idx: number) => (
+              {currentProfile.portfolios.map((p: any, idx: number) => (
                 <div key={idx} className="text-sm bg-muted/10 p-2 rounded border">
                   <span className="font-medium">[{p.platform === '직접 입력' ? p.customPlatform : p.platform}]</span> {p.title}
                   {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="text-blue-600 underline ml-2">링크 바로가기</a>}
@@ -251,9 +265,9 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         {/* 커리어 요약 */}
         <div className="space-y-2 border-t pt-4">
           <h4 className="font-semibold text-md">희망 및 커리어 요약</h4>
-          <p className="text-sm">희망 직무: {profile?.desired_role || '미입력'} | 희망 산업군: {profile?.desired_industry || '미입력'}</p>
+          <p className="text-sm">희망 직무: {currentProfile?.desired_role || '미입력'} | 희망 산업군: {currentProfile?.desired_industry || '미입력'}</p>
           <div className="text-sm bg-muted/20 p-3 rounded-md whitespace-pre-line mt-2">
-            {profile?.career_summary || '작성된 커리어 요약이 없습니다.'}
+            {currentProfile?.career_summary || '작성된 커리어 요약이 없습니다.'}
           </div>
         </div>
       </div>
@@ -265,7 +279,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     <form onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
       <div className="flex justify-between items-center border-b pb-4">
         <h2 className="text-xl font-bold">프로필 수정</h2>
-        {profile?.full_name && (
+        {currentProfile?.full_name && (
           <button 
             type="button" 
             onClick={() => setIsEditing(false)} 
@@ -290,8 +304,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
             </div>
             <input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs w-36 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-secondary file:text-secondary-foreground cursor-pointer" />
             
-            {profile?.avatar_url && !avatarFile && (
-              <a href={profile.avatar_url} download target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline whitespace-nowrap bg-blue-50 px-2 py-1 rounded text-center w-36">
+            {currentProfile?.avatar_url && !avatarFile && (
+              <a href={currentProfile.avatar_url} download target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline whitespace-nowrap bg-blue-50 px-2 py-1 rounded text-center w-36">
                 증명사진 다운로드
               </a>
             )}
@@ -301,7 +315,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">이름</label>
-                <input type="text" name="full_name" defaultValue={profile?.full_name || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="홍길동" />
+                <input type="text" name="full_name" defaultValue={currentProfile?.full_name || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="홍길동" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">성별</label>
@@ -321,11 +335,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2 col-span-2">
                 <label className="text-sm font-medium">생년월일 (달력 선택)</label>
-                <input type="date" name="birth_date" defaultValue={profile?.birth_date || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" />
+                <input type="date" name="birth_date" defaultValue={currentProfile?.birth_date || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">양/음력</label>
-                <select name="birth_type" defaultValue={profile?.birth_type || '양력'} className="w-full px-3 py-2 border rounded-md text-sm bg-background">
+                <select name="birth_type" defaultValue={currentProfile?.birth_type || '양력'} className="w-full px-3 py-2 border rounded-md text-sm bg-background">
                   <option value="양력">양력</option>
                   <option value="음력">음력</option>
                 </select>
@@ -336,7 +350,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
         <div className="space-y-2 pt-2">
           <label className="text-sm font-medium">거주 지역</label>
-          <input type="text" name="desired_location" defaultValue={profile?.desired_location || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="울산 / 부산" />
+          <input type="text" name="desired_location" defaultValue={currentProfile?.desired_location || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="울산 / 부산" />
         </div>
       </div>
 
@@ -345,11 +359,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">대학교 / 기관</label>
-            <input type="text" name="university" defaultValue={profile?.university || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="부경대학교" />
+            <input type="text" name="university" defaultValue={currentProfile?.university || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="부경대학교" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">전공</label>
-            <input type="text" name="major" defaultValue={profile?.major || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="고분자공학과" />
+            <input type="text" name="major" defaultValue={currentProfile?.major || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="고분자공학과" />
           </div>
         </div>
       </div>
@@ -543,7 +557,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
                 updated[index].title = e.target.value;
                 setPortfolios(updated);
               }} className="px-2 py-1 border rounded text-sm bg-background" />
-              {/* type을 url에서 text로 변경하여 유효성 검사로 인한 제출 차단 방지 */}
               <input type="text" placeholder="URL 링크 (예: https://...)" value={item.url || ''} onChange={(e) => {
                 const updated = [...portfolios];
                 updated[index].url = e.target.value;
@@ -569,16 +582,16 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">희망 직무</label>
-            <input type="text" name="desired_role" defaultValue={profile?.desired_role || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="R&D / 품질관리(QC)" />
+            <input type="text" name="desired_role" defaultValue={currentProfile?.desired_role || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="R&D / 품질관리(QC)" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">희망 산업군</label>
-            <input type="text" name="desired_industry" defaultValue={profile?.desired_industry || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="소재, 화학, 제조업" />
+            <input type="text" name="desired_industry" defaultValue={currentProfile?.desired_industry || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="소재, 화학, 제조업" />
           </div>
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium">핵심 커리어 요약</label>
-          <textarea name="career_summary" rows={4} defaultValue={profile?.career_summary || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="주요 프로젝트 및 경력을 요약해주세요." />
+          <textarea name="career_summary" rows={4} defaultValue={currentProfile?.career_summary || ''} className="w-full px-3 py-2 border rounded-md text-sm bg-background" placeholder="주요 프로젝트 및 경력을 요약해주세요." />
         </div>
       </div>
 
