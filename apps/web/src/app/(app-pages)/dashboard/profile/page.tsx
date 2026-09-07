@@ -8,14 +8,15 @@ export default async function ProfilePage() {
   noStore();
   const supabase = await createSupabaseClient();
   
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) redirect('/login');
 
+  // .single() 대신 .maybeSingle()을 사용하여 프로필이 아직 없는 신규 유저의 렌더링 오류 방지
   const { data: profile } = await (supabase
     .from('profiles' as any)
     .select('*')
     .eq('id', user.id)
-    .single() as any);
+    .maybeSingle() as any);
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6">
@@ -26,7 +27,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileForm profile={profile} action={updateProfile} />
+      <ProfileForm profile={profile || {}} action={updateProfile} />
     </div>
   );
 }
