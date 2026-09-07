@@ -16,7 +16,7 @@ export default function ResultDownloadButton({
   filenamePrefix = 'career-report',
   filename,
 }: DownloadButtonProps) {
-  const [format, setFormat] = useState<'md' | 'txt' | 'json' | 'doc' | 'xls' | 'pdf' | 'png' | 'jpeg' | 'html' | 'rtf'>('md');
+  const [format, setFormat] = useState<'md' | 'txt' | 'json' | 'doc' | 'xls' | 'pdf' | 'html' | 'rtf'>('md');
   const [isProcessing, setIsProcessing] = useState(false);
 
   // 오늘 날짜를 YYYY-MM-DD 형식으로 생성
@@ -32,7 +32,9 @@ export default function ResultDownloadButton({
     if (!content) return;
 
     const dateStr = getFormattedDate();
-    const baseName = filename || filenamePrefix || 'career-report';
+    // 파일명에 'md'가 섞여 들어오는 경우 깔끔하게 제거
+    const rawBaseName = filename || filenamePrefix || 'career-report';
+    const baseName = rawBaseName.replace(/\bmd\b/gi, '').replace(/-md/gi, '').trim() || 'career-report';
     const finalFilename = `${baseName}-${dateStr}`;
 
     let fileContent = content;
@@ -84,61 +86,6 @@ export default function ResultDownloadButton({
         printWindow.document.close();
       }
       return;
-    } else if (format === 'png' || format === 'jpeg') {
-      setIsProcessing(true);
-      try {
-        const htmlFormatted = content.replace(/\n/g, '<br>');
-        const svgString = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1200">
-            <foreignObject width="100%" height="100%">
-              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Malgun Gothic', sans-serif; padding: 40px; background: #ffffff; color: #111827; font-size: 14px; line-height: 1.6; box-sizing: border-box; height: 100%; overflow: hidden;">
-                ${htmlFormatted}
-              </div>
-            </foreignObject>
-          </svg>
-        `;
-
-        // Base64 인코딩을 적용하여 브라우저 보안 제약 및 로딩 오류 방지
-        const base64Svg = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`;
-        const img = new Image();
-
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 800;
-          canvas.height = 1200;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-
-            const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-            const ext = format === 'jpeg' ? 'jpg' : 'png';
-            const dataUrl = canvas.toDataURL(mime, 0.9);
-
-            const link = document.createElement('a');
-            link.href = dataUrl;
-            link.download = `${finalFilename}.${ext}`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          }
-          setIsProcessing(false);
-        };
-
-        img.onerror = () => {
-          alert('이미지 변환 중 오류가 발생했습니다.');
-          setIsProcessing(false);
-        };
-
-        img.src = base64Svg;
-        return;
-      } catch (e) {
-        console.error(e);
-        setIsProcessing(false);
-        alert('이미지 생성에 실패했습니다.');
-        return;
-      }
     }
 
     const blob = new Blob([fileContent], { type: mimeType });
@@ -166,8 +113,6 @@ export default function ResultDownloadButton({
         <option value="doc">MS Word / 한글 호환 (.doc)</option>
         <option value="xls">Excel / 한셀 호환 (.xls)</option>
         <option value="pdf">PDF 문서 (.pdf)</option>
-        <option value="png">이미지 PNG (.png)</option>
-        <option value="jpeg">이미지 JPEG (.jpg)</option>
         <option value="json">백업용 JSON (.json)</option>
       </select>
       
