@@ -1,9 +1,10 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
-import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
+import { approveUser } from './actions';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminUsersPage() {
-  noStore();
   const supabase = await createSupabaseClient();
   
   // 1. 현재 로그인한 유저 확인 및 관리자 권한(role === 'admin') 체크
@@ -25,20 +26,6 @@ export default async function AdminUsersPage() {
     .from('profiles' as any)
     .select('*')
     .eq('status', 'pending') as any);
-
-  // 3. 승인 처리 서버 액션
-  async function approveUser(formData: FormData) {
-    'use server';
-    const userId = formData.get('userId') as string;
-    const supabaseServer = await createSupabaseClient();
-
-    await (supabaseServer
-      .from('profiles' as any)
-      .update({ status: 'approved' })
-      .eq('id', userId) as any);
-
-    revalidatePath('/admin/users');
-  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
