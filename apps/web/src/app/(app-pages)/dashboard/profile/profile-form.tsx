@@ -90,6 +90,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget; // ⭐ [수정 포인트] 비동기 처리 전 form 요소를 미리 캡처합니다.
     setIsLoading(true);
 
     try {
@@ -103,7 +104,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         return;
       }
 
-      const formData = new FormData(e.currentTarget);
+      // 1. 아바타(증명사진) 업로드 처리
       let avatar_url = currentProfile?.avatar_url || '';
 
       if (avatarFile) {
@@ -123,8 +124,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           .getPublicUrl(avatarPath);
         avatar_url = publicUrl;
       }
-      formData.set('avatar_url', avatar_url);
 
+      // 2. 자격증 증빙 파일 업로드 처리
       const updatedCertifications = [...certifications];
       for (const [indexStr, file] of Object.entries(certFiles)) {
         const index = Number(indexStr);
@@ -145,10 +146,14 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         updatedCertifications[index].proofUrl = publicUrl;
       }
 
+      // ⭐ [수정 포인트] 캡처해둔 form을 사용하여 FormData 생성
+      const formData = new FormData(form);
+      formData.set('avatar_url', avatar_url);
       formData.set('certifications', JSON.stringify(updatedCertifications));
       formData.set('military_service', JSON.stringify(militaryServices));
       formData.set('portfolios', JSON.stringify(portfolios));
 
+      // 서버 액션(혹은 전달받은 action) 호출
       const result = await action(formData);
       
       if (result && result.success === false) {
@@ -184,7 +189,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       setIsLoading(false);
     }
   };
-
+  
   // 1. 조회(요약) 모드 화면
   if (!isEditing) {
     return (
