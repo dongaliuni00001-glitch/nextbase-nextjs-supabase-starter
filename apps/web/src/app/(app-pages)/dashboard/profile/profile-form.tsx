@@ -13,15 +13,19 @@ const RANK_MAPPING: Record<string, string[]> = {
   기타: ['기타']
 };
 
-// 💡 Supabase 클라이언트를 컴포넌트 외부(파일 최상단)로 이동
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
+
+function getSupabase() {
+  if (!supabaseInstance) {
+    supabaseInstance = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return supabaseInstance;
+}
 
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
-  // 기존 컴포넌트 내부의 const supabase = createBrowserClient(...) 코드는 삭제되었습니다.
-
   const [gender, setGender] = useState(profile?.gender || '');
   
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
@@ -70,6 +74,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     e.preventDefault();
     setIsLoading(true);
 
+    const supabase = getSupabase();
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
@@ -83,7 +89,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       const formData = new FormData(e.currentTarget);
       let avatar_url = profile?.avatar_url || '';
 
-      // 1. 증명사진 클라이언트 직접 업로드
       if (avatarFile) {
         const avatarPath = `${userId}/avatar/${Date.now()}_${avatarFile.name}`;
         const { error: avatarUploadError } = await supabase.storage
@@ -103,7 +108,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       }
       formData.set('avatar_url', avatar_url);
 
-      // 2. 자격증 증빙 파일 클라이언트 직접 업로드
       const updatedCertifications = [...certifications];
       for (const [indexStr, file] of Object.entries(certFiles)) {
         const index = Number(indexStr);
@@ -128,7 +132,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       formData.set('military_service', JSON.stringify(militaryServices));
       formData.set('portfolios', JSON.stringify(portfolios));
 
-      // 3. 서버 액션 호출 (텍스트 데이터 및 URL만 전달)
       const result = await action(formData);
       
       if (result && !result.success) {
@@ -146,7 +149,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
-      {/* 기본 정보 및 증명사진 */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold border-b pb-2">기본 정보 및 증명사진</h2>
         
@@ -211,7 +213,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         </div>
       </div>
 
-      {/* 학력 정보 */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold border-b pb-2">학력 정보</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -226,7 +227,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         </div>
       </div>
 
-      {/* 병역 사항 */}
       {gender === '남성' && (
         <div className="space-y-4 border p-4 rounded-md bg-muted/20">
           <div className="flex justify-between items-center">
@@ -330,7 +330,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         </div>
       )}
 
-      {/* 보유 자격증 */}
       <div className="space-y-4">
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold">보유 자격증</h2>
@@ -373,7 +372,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         ))}
       </div>
 
-      {/* 포트폴리오 및 링크 */}
       <div className="space-y-4">
         <div className="flex justify-between items-center border-b pb-2">
           <h2 className="text-lg font-semibold">포트폴리오 및 링크</h2>
@@ -438,7 +436,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         ))}
       </div>
 
-      {/* 희망 직무 및 커리어 요약 */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold border-b pb-2">희망 및 커리어 요약</h2>
         <div className="grid grid-cols-2 gap-4">
