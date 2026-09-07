@@ -3,7 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client'; // 프로젝트 내 수파베이스 클라이언트 경로에 맞게 조정
+import { createClient } from '@/supabase-clients/client';
 
 export default function PendingApprovalPage() {
   const router = useRouter();
