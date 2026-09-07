@@ -28,14 +28,16 @@ function getSupabase() {
 
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const router = useRouter();
-  const [gender, setGender] = useState(profile?.gender || '');
   
+  // 데이터가 없거나 최초 등록 상태라면 기본적으로 수정 모드, 이미 데이터가 있으면 조회 모드로 시작할 수 있습니다.
+  const [isEditing, setIsEditing] = useState(!profile?.full_name);
+
+  const [gender, setGender] = useState(profile?.gender || '');
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
   const [militaryServices, setMilitaryServices] = useState<any[]>(profile?.military_service || []);
   const [portfolios, setPortfolios] = useState<any[]>(profile?.portfolios || []);
 
   const [certFiles, setCertFiles] = useState<Record<number, File>>({});
-  
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,7 +142,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         alert(`저장 실패: ${result.error}`);
       } else {
         alert('프로필이 성공적으로 저장되었습니다!');
-        router.refresh(); // 저장 후 페이지 새로고침 및 데이터 갱신
+        setIsEditing(false); // 저장 성공 시 조회 화면으로 전환
+        router.refresh();
       }
     } catch (error: any) {
       console.error(error);
@@ -150,10 +153,116 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     }
   };
 
+  // 💡 1. 조회(요약) 모드 화면
+  if (!isEditing) {
+    return (
+      <div className="space-y-8 border p-6 rounded-lg bg-card shadow-sm">
+        <div className="flex justify-between items-center border-b pb-4">
+          <h2 className="text-xl font-bold">프로필 요약 정보</h2>
+          <button 
+            type="button" 
+            onClick={() => setIsEditing(true)} 
+            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+          >
+            프로필 수정하기
+          </button>
+        </div>
+
+        {/* 기본 정보 */}
+        <div className="flex flex-col sm:flex-row gap-6 items-start">
+          <div className="w-32 h-40 border rounded-md overflow-hidden bg-muted flex items-center justify-center shadow-inner">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="증명사진" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs text-muted-foreground text-center">사진 없음</span>
+            )}
+          </div>
+          <div className="space-y-2 flex-1">
+            <h3 className="text-2xl font-semibold">{profile?.full_name || '이름 미등록'}</h3>
+            <p className="text-sm text-muted-foreground">성별: {profile?.gender || '미입력'}</p>
+            <p className="text-sm text-muted-foreground">생년월일: {profile?.birth_date ? `${profile.birth_date} (${profile.birth_type || '양력'})` : '미입력'}</p>
+            <p className="text-sm text-muted-foreground">거주 지역: {profile?.desired_location || '미입력'}</p>
+          </div>
+        </div>
+
+        {/* 학력 정보 */}
+        <div className="space-y-2 border-t pt-4">
+          <h4 className="font-semibold text-md">학력 정보</h4>
+          <p className="text-sm">대학교: {profile?.university || '미입력'} | 전공: {profile?.major || '미입력'}</p>
+        </div>
+
+        {/* 병역 사항 */}
+        {profile?.military_service && profile.military_service.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <h4 className="font-semibold text-md">병역 사항</h4>
+            {profile.military_service.map((m: any, idx: number) => (
+              <div key={idx} className="text-sm bg-muted/20 p-2 rounded">
+                {m.branch} / {m.rank} / {m.dischargeType} ({m.startMonth || '시작일 미상'} ~ {m.endMonth || '종료일 미상'})
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 자격증 */}
+        {profile?.certifications && profile.certifications.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <h4 className="font-semibold text-md">보유 자격증</h4>
+            <ul className="list-disc list-inside text-sm space-y-1">
+              {profile.certifications.map((c: any, idx: number) => (
+                <li key={idx}>
+                  {c.name} ({c.issuer} - {c.date}) {c.proofUrl && <a href={c.proofUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline ml-2">[증빙서류]</a>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* 포트폴리오 */}
+        {profile?.portfolios && profile.portfolios.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <h4 className="font-semibold text-md">포트폴리오 및 링크</h4>
+            <div className="space-y-2">
+              {profile.portfolios.map((p: any, idx: number) => (
+                <div key={idx} className="text-sm bg-muted/10 p-2 rounded border">
+                  <span className="font-medium">[{p.platform === '직접 입력' ? p.customPlatform : p.platform}]</span> {p.title}
+                  {p.url && <a href={p.url} target="_blank" rel="noreferrer" className="text-blue-600 underline ml-2">링크 바로가기</a>}
+                  {p.description && <p className="text-xs text-muted-foreground mt-1">{p.description}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 커리어 요약 */}
+        <div className="space-y-2 border-t pt-4">
+          <h4 className="font-semibold text-md">희망 및 커리어 요약</h4>
+          <p className="text-sm">희망 직무: {profile?.desired_role || '미입력'} | 희망 산업군: {profile?.desired_industry || '미입력'}</p>
+          <div className="text-sm bg-muted/20 p-3 rounded-md whitespace-pre-line mt-2">
+            {profile?.career_summary || '작성된 커리어 요약이 없습니다.'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 💡 2. 수정 모드 화면 (기존 입력 폼)
   return (
     <form onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
+      <div className="flex justify-between items-center border-b pb-4">
+        <h2 className="text-xl font-bold">프로필 수정</h2>
+        {profile?.full_name && (
+          <button 
+            type="button" 
+            onClick={() => setIsEditing(false)} 
+            className="text-xs px-3 py-1.5 border rounded-md text-muted-foreground hover:bg-muted"
+          >
+            취소하기
+          </button>
+        )}
+      </div>
+
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold border-b pb-2">기본 정보 및 증명사진</h2>
+        <h3 className="text-lg font-semibold border-b pb-2">기본 정보 및 증명사진</h3>
         
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="flex flex-col items-center space-y-2">
@@ -217,7 +326,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold border-b pb-2">학력 정보</h2>
+        <h3 className="text-lg font-semibold border-b pb-2">학력 정보</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">대학교 / 기관</label>
@@ -233,7 +342,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       {gender === '남성' && (
         <div className="space-y-4 border p-4 rounded-md bg-muted/20">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">병역 사항</h2>
+            <h3 className="text-lg font-semibold">병역 사항</h3>
             <button type="button" onClick={addMilitary} className="text-xs px-3 py-1 bg-secondary text-secondary-foreground rounded-md">항목 추가</button>
           </div>
           {militaryServices.map((item, index) => {
@@ -335,7 +444,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
       <div className="space-y-4">
         <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-lg font-semibold">보유 자격증</h2>
+          <h3 className="text-lg font-semibold">보유 자격증</h3>
           <button type="button" onClick={addCertification} className="text-xs px-3 py-1 bg-secondary text-secondary-foreground rounded-md">자격증 추가</button>
         </div>
         {certifications.map((item, index) => (
@@ -377,7 +486,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
       <div className="space-y-4">
         <div className="flex justify-between items-center border-b pb-2">
-          <h2 className="text-lg font-semibold">포트폴리오 및 링크</h2>
+          <h3 className="text-lg font-semibold">포트폴리오 및 링크</h3>
           <button type="button" onClick={addPortfolio} className="text-xs px-3 py-1 bg-secondary text-secondary-foreground rounded-md">링크 추가</button>
         </div>
         {portfolios.map((item, index) => (
@@ -440,7 +549,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold border-b pb-2">희망 및 커리어 요약</h2>
+        <h3 className="text-lg font-semibold border-b pb-2">희망 및 커리어 요약</h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">희망 직무</label>
