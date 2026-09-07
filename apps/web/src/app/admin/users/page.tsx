@@ -1,10 +1,9 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
-
-export const dynamic = 'force-dynamic';
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 
 export default async function AdminUsersPage() {
+  noStore();
   const supabase = await createSupabaseClient();
   
   // 1. 현재 로그인한 유저 확인 및 관리자 권한(role === 'admin') 체크
@@ -18,7 +17,7 @@ export default async function AdminUsersPage() {
     .single() as any);
 
   if (adminProfile?.role !== 'admin') {
-    redirect('/dashboard'); // 관리자가 아니면 대시보드로 리다이렉트
+    redirect('/dashboard');
   }
 
   // 2. pending 상태인 유저 목록 조회
