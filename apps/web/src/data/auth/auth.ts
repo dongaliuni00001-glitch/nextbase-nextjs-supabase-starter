@@ -5,7 +5,7 @@ import { toSiteURL } from '@/utils/helpers';
 import { z } from 'zod';
 
 const signUpSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(3),
 });
 
