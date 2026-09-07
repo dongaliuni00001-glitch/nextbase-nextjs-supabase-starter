@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { updateProfile } from './actions';
 
-export function ProfileForm({ profile }: { profile: any }) {
+export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<void> }) {
   const [gender, setGender] = useState(profile?.gender || '');
   
-  // 동적 리스트 상태 관리
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
   const [militaryServices, setMilitaryServices] = useState<any[]>(profile?.military_service || []);
   const [portfolios, setPortfolios] = useState<any[]>(profile?.portfolios || []);
@@ -33,7 +31,7 @@ export function ProfileForm({ profile }: { profile: any }) {
   };
 
   return (
-    <form action={updateProfile} className="space-y-8 border p-6 rounded-lg bg-card">
+    <form action={action} className="space-y-8 border p-6 rounded-lg bg-card">
       <input type="hidden" name="certifications" value={JSON.stringify(certifications)} />
       <input type="hidden" name="military_service" value={JSON.stringify(militaryServices)} />
       <input type="hidden" name="portfolios" value={JSON.stringify(portfolios)} />

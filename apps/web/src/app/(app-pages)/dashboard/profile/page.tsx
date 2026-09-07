@@ -1,6 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
-import { unstable_noStore as noStore } from 'next/cache';
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 import { ProfileForm } from './profile-form';
 
 export default async function ProfilePage() {
@@ -16,6 +16,58 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single() as any);
 
+  // 서버 액션을 페이지 내에 정의하여 클라이언트에 prop으로 전달
+  async function updateProfile(formData: FormData) {
+    'use server';
+    const supabaseServer = await createSupabaseClient();
+    const { data: { user: currentUser } } = await supabaseServer.auth.getUser();
+
+    if (!currentUser) {
+      throw new Error('인증되지 않은 유저입니다.');
+    }
+
+    const full_name = formData.get('full_name') as string;
+    const gender = formData.get('gender') as string;
+    const birth_date = formData.get('birth_date') as string;
+    const birth_type = formData.get('birth_type') as string;
+    const university = formData.get('university') as string;
+    const major = formData.get('major') as string;
+    const desired_role = formData.get('desired_role') as string;
+    const desired_industry = formData.get('desired_industry') as string;
+    const desired_location = formData.get('desired_location') as string;
+    const career_summary = formData.get('career_summary') as string;
+
+    const certifications = JSON.parse((formData.get('certifications') as string) || '[]');
+    const military_service = JSON.parse((formData.get('military_service') as string) || '[]');
+    const portfolios = JSON.parse((formData.get('portfolios') as string) || '[]');
+
+    const { error } = await (supabaseServer
+      .from('profiles' as any)
+      .update({
+        full_name,
+        gender,
+        birth_date,
+        birth_type,
+        university,
+        major,
+        certifications,
+        military_service,
+        portfolios,
+        desired_role,
+        desired_industry,
+        desired_location,
+        career_summary,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', currentUser.id) as any);
+
+    if (error) {
+      throw new Error(`프로필 업데이트 실패: ${error.message}`);
+    }
+
+    revalidatePath('/dashboard/profile');
+  }
+
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6">
       <div>
@@ -25,7 +77,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileForm profile={profile} />
+      <ProfileForm profile={profile} action={updateProfile} />
     </div>
   );
 }
