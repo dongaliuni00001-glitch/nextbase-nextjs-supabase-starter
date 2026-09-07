@@ -33,28 +33,58 @@ function getSupabase() {
   return supabaseInstance;
 }
 
+// 🛡️ 데이터가 문자열이든 배열이든 안전하게 배열로 변환해주는 헬퍼 함수
+const ensureArray = (data: any) => {
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const router = useRouter();
-  
-  // ⭐ 폼 요소를 안정적으로 참조하기 위한 useRef 추가
   const formRef = useRef<HTMLFormElement>(null);
-  
-  const [currentProfile, setCurrentProfile] = useState(profile || {});
-  const [isEditing, setIsEditing] = useState(!profile?.full_name);
+
+  // 데이터 안전 파싱
+  const safeProfile = {
+    ...profile,
+    military_service: ensureArray(profile?.military_service),
+    certifications: ensureArray(profile?.certifications),
+    portfolios: ensureArray(profile?.portfolios),
+  };
+
+  const [currentProfile, setCurrentProfile] = useState(safeProfile);
+  const [isEditing, setIsEditing] = useState(!safeProfile?.full_name);
 
   useEffect(() => {
     if (profile) {
-      setCurrentProfile(profile);
+      const updated = {
+        ...profile,
+        military_service: ensureArray(profile.military_service),
+        certifications: ensureArray(profile.certifications),
+        portfolios: ensureArray(profile.portfolios),
+      };
+      setCurrentProfile(updated);
+      setCertifications(updated.certifications);
+      setMilitaryServices(updated.military_service);
+      setPortfolios(updated.portfolios);
+      if (profile.gender) setGender(profile.gender);
     }
   }, [profile]);
 
-  const [gender, setGender] = useState(profile?.gender || '');
-  const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
-  const [militaryServices, setMilitaryServices] = useState<any[]>(profile?.military_service || []);
-  const [portfolios, setPortfolios] = useState<any[]>(profile?.portfolios || []);
+  const [gender, setGender] = useState(safeProfile?.gender || '');
+  const [certifications, setCertifications] = useState<any[]>(safeProfile?.certifications || []);
+  const [militaryServices, setMilitaryServices] = useState<any[]>(safeProfile?.military_service || []);
+  const [portfolios, setPortfolios] = useState<any[]>(safeProfile?.portfolios || []);
 
   const [certFiles, setCertFiles] = useState<Record<number, File>>({});
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(safeProfile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -145,7 +175,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         updatedCertifications[index].proofUrl = publicUrl;
       }
 
-      // ⭐ useRef로 안전하게 가져온 formRef.current를 사용해 FormData 생성
       if (!formRef.current) {
         throw new Error('폼 요소를 찾을 수 없습니다.');
       }
@@ -278,7 +307,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     );
   }
 
-  // 2. 수정 모드 화면 (⭐ ref 연결)
+  // 2. 수정 모드 화면
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
       <div className="flex justify-between items-center border-b pb-4">
