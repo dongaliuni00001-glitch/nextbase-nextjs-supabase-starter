@@ -1,10 +1,9 @@
+import { Suspense } from 'react';
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
 import { approveUser } from './actions';
 
-export const dynamic = 'force-dynamic';
-
-export default async function AdminUsersPage() {
+async function AdminUsersContent() {
   const supabase = await createSupabaseClient();
   
   // 1. 현재 로그인한 유저 확인 및 관리자 권한(role === 'admin') 체크
@@ -28,7 +27,7 @@ export default async function AdminUsersPage() {
     .eq('status', 'pending') as any);
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">회원가입 승인 대기 목록</h1>
       {pendingUsers?.length === 0 ? (
         <p className="text-muted-foreground">승인 대기 중인 유저가 없습니다.</p>
@@ -52,6 +51,16 @@ export default async function AdminUsersPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <div className="p-8 max-w-4xl mx-auto">
+      <Suspense fallback={<p className="text-muted-foreground">로딩 중...</p>}>
+        <AdminUsersContent />
+      </Suspense>
     </div>
   );
 }
