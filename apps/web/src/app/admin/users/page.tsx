@@ -7,7 +7,6 @@ import { approveUser } from './actions';
 async function AdminUsersContent() {
   const supabase = await createSupabaseClient();
   
-  // 1. 현재 로그인한 유저 확인 및 관리자 권한 체크
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
@@ -21,16 +20,24 @@ async function AdminUsersContent() {
     redirect('/dashboard');
   }
 
-  // 2. Admin 클라이언트로 pending 유저 및 이메일 조회
+  // 환경 변수 검증
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return <p className="text-red-500">서버 환경 변수(SUPABASE_SERVICE_ROLE_KEY)가 설정되지 않았습니다.</p>;
+  }
+
   const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const { data: pendingProfiles } = await supabaseAdmin
+  const { data: pendingProfiles, error: profileError } = await supabaseAdmin
     .from('profiles')
     .select('id, status')
     .eq('status', 'pending');
+
+  if (profileError) {
+    return <p className="text-red-500">데이터를 불러오는 중 오류가 발생했습니다: {profileError.message}</p>;
+  }
 
   const pendingUsers = await Promise.all(
     (pendingProfiles || []).map(async (p) => {
