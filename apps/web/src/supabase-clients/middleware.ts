@@ -33,42 +33,56 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  const pathname = request.nextUrl.pathname;
+    const pathname = request.nextUrl.pathname;
 
-  // 1. 로그인하지 않은 사용자가 보호된 페이지에 접근할 경우
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  // 2. 로그인한 유저인 경우 승인 상태 확인
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('status, role')
-      .eq('id', user.id)
-      .single();
-
-    const status = profile?.status || 'pending';
-    const role = profile?.role || 'user';
-
-    // 승인 대기 중인 유저가 /pending-approval 이외의 페이지에 접근할 경우
-    if (status === 'pending' && pathname !== '/pending-approval') {
-      return NextResponse.redirect(new URL('/pending-approval', request.url));
+    // 1. 로그인하지 않은 사용자가 보호된 페이지에 접근할 경우
+    if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/admin'))) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // 승인된 유저가 승인 대기 페이지에 접근할 경우 대시보드로 리디렉션
-    if (status === 'approved' && pathname === '/pending-approval') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+    // 2. 로그인한 유저인 경우 승인 상태 확인
+    if (user) {
+      let status = 'pending';
+      let role = 'user';
 
-    // 관리자 페이지 접근 권한 체크
-    if (pathname.startsWith('/admin') && role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('status, role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!error && profile) {
+          status = profile.status || 'pending';
+          role = profile.role || 'user';
+        }
+      } catch (dbErr) {
+        // 테이블이 아직 없거나 조회 실패 시 기본값(pending) 유지
+        console.error('Profile fetch skipped or failed:', dbErr);
+      }
+
+      // 승인 대기 중인 유저가 /pending-approval 이외의 페이지에 접근할 경우
+      if (status === 'pending' && pathname !== '/pending-approval') {
+        return NextResponse.redirect(new URL('/pending-approval', request.url));
+      }
+
+      // 승인된 유저가 승인 대기 페이지에 접근할 경우 대시보드로 리디렉션
+      if (status === 'approved' && pathname === '/pending-approval') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+
+      // 관리자 페이지 접근 권한 체크
+      if (pathname.startsWith('/admin') && role !== 'admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
+  } catch (err) {
+    console.error('Middleware execution error:', err);
   }
 
   return response;
