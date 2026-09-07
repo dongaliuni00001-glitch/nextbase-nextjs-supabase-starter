@@ -1,5 +1,20 @@
 'use client';
 
+function getSupabase() {
+  if (!supabaseInstance) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      alert('Supabase 환경변수가 설정되지 않았습니다. .env.local 파일을 확인하고 개발 서버를 재시작해주세요.');
+      throw new Error('Supabase URL and Anon Key are required.');
+    }
+
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+  }
+  return supabaseInstance;
+}
+
 import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
