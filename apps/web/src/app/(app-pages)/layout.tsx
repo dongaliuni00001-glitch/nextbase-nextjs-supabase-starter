@@ -12,9 +12,28 @@ import {
 import { getCachedIsUserLoggedIn } from '@/rsc-data/supabase';
 import { AppSidebar } from './app-sidebar';
 
+import { createSupabaseClient } from '@/supabase-clients/server';
+
 async function AuthGuard({ children }: { children: ReactNode }) {
-  const isLoggedIn = await getCachedIsUserLoggedIn();
-  if (!isLoggedIn) redirect('/login');
+  const supabase = await createSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // profiles 테이블에서 유저의 status 확인
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', user.id)
+    .single();
+
+  // status가 pending인 경우 승인 대기 페이지로 리다이렉트
+  if (profile?.status === 'pending') {
+    redirect('/pending-approval');
+  }
+
   return <>{children}</>;
 }
 
