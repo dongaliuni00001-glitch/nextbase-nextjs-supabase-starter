@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ProfileForm } from '../../../components/ProfileForm';
+import { ProfileForm } from './ProfileForm';
 import { createBrowserClient } from '@supabase/ssr';
 
 export default function DashboardPage({ profile, action }: { profile?: any; action?: any }) {
