@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createBrowserClient } from '@supabase/ssr';
 
 const RANK_MAPPING: Record<string, string[]> = {
   육군: ['병장', '상병', '일병', '이병', '하사', '중사', '상사', '원사', '소위', '중위', '대위'],
@@ -13,6 +14,11 @@ const RANK_MAPPING: Record<string, string[]> = {
 };
 
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   const [gender, setGender] = useState(profile?.gender || '');
   
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
@@ -23,6 +29,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
   
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,21 +65,67 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      const formData = new FormData(e.currentTarget);
+    setIsLoading(true);
 
-      formData.set('certifications', JSON.stringify(certifications));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (!userId) {
+        alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+        setIsLoading(false);
+        return;
+      }
+
+      const formData = new FormData(e.currentTarget);
+      let avatar_url = profile?.avatar_url || '';
+
+      // 1. 증명사진 클라이언트 직접 업로드
+      if (avatarFile) {
+        const avatarPath = `${userId}/avatar/${Date.now()}_${avatarFile.name}`;
+        const { error: avatarUploadError } = await supabase.storage
+          .from('documents')
+          .upload(avatarPath, avatarFile);
+
+        if (avatarUploadError) {
+          alert(`증명사진 업로드 실패: ${avatarUploadError.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('documents')
+          .getPublicUrl(avatarPath);
+        avatar_url = publicUrl;
+      }
+      formData.set('avatar_url', avatar_url);
+
+      // 2. 자격증 증빙 파일 클라이언트 직접 업로드
+      const updatedCertifications = [...certifications];
+      for (const [indexStr, file] of Object.entries(certFiles)) {
+        const index = Number(indexStr);
+        const filePath = `${userId}/certs/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          alert(`자격증 증빙 파일 업로드 실패: ${uploadError.message}`);
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('documents')
+          .getPublicUrl(filePath);
+        updatedCertifications[index].proofUrl = publicUrl;
+      }
+
+      formData.set('certifications', JSON.stringify(updatedCertifications));
       formData.set('military_service', JSON.stringify(militaryServices));
       formData.set('portfolios', JSON.stringify(portfolios));
 
-      if (avatarFile) {
-        formData.set('avatar_file', avatarFile);
-      }
-
-      Object.entries(certFiles).forEach(([index, file]) => {
-        formData.append(`cert_file_${index}`, file);
-      });
-
+      // 3. 서버 액션 호출 (텍스트 데이터 및 URL만 전달)
       const result = await action(formData);
       
       if (result && !result.success) {
@@ -83,6 +136,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     } catch (error: any) {
       console.error(error);
       alert(`저장 중 예기치 못한 오류가 발생했습니다: ${error?.message || '알 수 없는 오류'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -399,8 +454,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         </div>
       </div>
 
-      <button type="submit" className="w-full py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors">
-        프로필 정보 저장하기
+      <button type="submit" disabled={isLoading} className="w-full py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50">
+        {isLoading ? '저장 중...' : '프로필 정보 저장하기'}
       </button>
     </form>
   );
