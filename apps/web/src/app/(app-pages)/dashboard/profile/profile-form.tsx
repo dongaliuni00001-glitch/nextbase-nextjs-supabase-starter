@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
@@ -19,7 +19,6 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 function getSupabase() {
   if (!supabaseInstance) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    // ANON_KEY 또는 PUBLISHABLE_KEY 둘 중 하나라도 들어가 있으면 인식하도록 처리
     const supabaseKey = 
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -36,6 +35,9 @@ function getSupabase() {
 
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const router = useRouter();
+  
+  // ⭐ 폼 요소를 안정적으로 참조하기 위한 useRef 추가
+  const formRef = useRef<HTMLFormElement>(null);
   
   const [currentProfile, setCurrentProfile] = useState(profile || {});
   const [isEditing, setIsEditing] = useState(!profile?.full_name);
@@ -90,7 +92,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = e.currentTarget; // ⭐ [수정 포인트] 비동기 처리 전 form 요소를 미리 캡처합니다.
     setIsLoading(true);
 
     try {
@@ -104,7 +105,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         return;
       }
 
-      // 1. 아바타(증명사진) 업로드 처리
       let avatar_url = currentProfile?.avatar_url || '';
 
       if (avatarFile) {
@@ -125,7 +125,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         avatar_url = publicUrl;
       }
 
-      // 2. 자격증 증빙 파일 업로드 처리
       const updatedCertifications = [...certifications];
       for (const [indexStr, file] of Object.entries(certFiles)) {
         const index = Number(indexStr);
@@ -146,14 +145,17 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         updatedCertifications[index].proofUrl = publicUrl;
       }
 
-      // ⭐ [수정 포인트] 캡처해둔 form을 사용하여 FormData 생성
-      const formData = new FormData(form);
+      // ⭐ useRef로 안전하게 가져온 formRef.current를 사용해 FormData 생성
+      if (!formRef.current) {
+        throw new Error('폼 요소를 찾을 수 없습니다.');
+      }
+
+      const formData = new FormData(formRef.current);
       formData.set('avatar_url', avatar_url);
       formData.set('certifications', JSON.stringify(updatedCertifications));
       formData.set('military_service', JSON.stringify(militaryServices));
       formData.set('portfolios', JSON.stringify(portfolios));
 
-      // 서버 액션(혹은 전달받은 action) 호출
       const result = await action(formData);
       
       if (result && result.success === false) {
@@ -189,7 +191,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
       setIsLoading(false);
     }
   };
-  
+
   // 1. 조회(요약) 모드 화면
   if (!isEditing) {
     return (
@@ -205,7 +207,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           </button>
         </div>
 
-        {/* 기본 정보 */}
         <div className="flex flex-col sm:flex-row gap-6 items-start">
           <div className="w-32 h-40 border rounded-md overflow-hidden bg-muted flex items-center justify-center shadow-inner">
             {currentProfile?.avatar_url ? (
@@ -222,13 +223,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           </div>
         </div>
 
-        {/* 학력 정보 */}
         <div className="space-y-2 border-t pt-4">
           <h4 className="font-semibold text-md">학력 정보</h4>
           <p className="text-sm">대학교: {currentProfile?.university || '미입력'} | 전공: {currentProfile?.major || '미입력'}</p>
         </div>
 
-        {/* 병역 사항 */}
         {currentProfile?.military_service && currentProfile.military_service.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">병역 사항</h4>
@@ -240,7 +239,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           </div>
         )}
 
-        {/* 자격증 */}
         {currentProfile?.certifications && currentProfile.certifications.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">보유 자격증</h4>
@@ -254,7 +252,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           </div>
         )}
 
-        {/* 포트폴리오 */}
         {currentProfile?.portfolios && currentProfile.portfolios.length > 0 && (
           <div className="space-y-2 border-t pt-4">
             <h4 className="font-semibold text-md">포트폴리오 및 링크</h4>
@@ -270,7 +267,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
           </div>
         )}
 
-        {/* 커리어 요약 */}
         <div className="space-y-2 border-t pt-4">
           <h4 className="font-semibold text-md">희망 및 커리어 요약</h4>
           <p className="text-sm">희망 직무: {currentProfile?.desired_role || '미입력'} | 희망 산업군: {currentProfile?.desired_industry || '미입력'}</p>
@@ -282,9 +278,9 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     );
   }
 
-  // 2. 수정 모드 화면 (기존 입력 폼)
+  // 2. 수정 모드 화면 (⭐ ref 연결)
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
       <div className="flex justify-between items-center border-b pb-4">
         <h2 className="text-xl font-bold">프로필 수정</h2>
         {currentProfile?.full_name && (
