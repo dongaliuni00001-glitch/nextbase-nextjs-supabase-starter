@@ -59,7 +59,7 @@ export default async function ProfilePage() {
       }
     }
 
-    // 자격증 증빙 파일 업로드 처리 (타입 명시)
+    // 자격증 증빙 파일 업로드 처리
     const certifications: any[] = [];
     for (let i = 0; i < rawCerts.length; i++) {
       const cert = rawCerts[i];
@@ -82,9 +82,11 @@ export default async function ProfilePage() {
       certifications.push({ ...cert, proofUrl });
     }
 
+    // upsert를 사용하여 프로필 행이 없으면 생성, 있으면 수정
     const { error } = await (supabaseServer
       .from('profiles' as any)
-      .update({
+      .upsert({
+        id: currentUser.id,
         full_name,
         gender,
         birth_date,
@@ -100,8 +102,7 @@ export default async function ProfilePage() {
         career_summary,
         avatar_url,
         updated_at: new Date().toISOString(),
-      })
-      .eq('id', currentUser.id) as any);
+      }, { onConflict: 'id' }) as any);
 
     if (error) {
       throw new Error(`프로필 업데이트 실패: ${error.message}`);

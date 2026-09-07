@@ -21,7 +21,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   const [certFiles, setCertFiles] = useState<Record<number, File>>({});
   
-  // 증명사진 미리보기 상태
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile?.avatar_url || null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
@@ -59,22 +58,27 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    formData.set('certifications', JSON.stringify(certifications));
-    formData.set('military_service', JSON.stringify(militaryServices));
-    formData.set('portfolios', JSON.stringify(portfolios));
+      formData.set('certifications', JSON.stringify(certifications));
+      formData.set('military_service', JSON.stringify(militaryServices));
+      formData.set('portfolios', JSON.stringify(portfolios));
 
-    if (avatarFile) {
-      formData.set('avatar_file', avatarFile);
+      if (avatarFile) {
+        formData.set('avatar_file', avatarFile);
+      }
+
+      Object.entries(certFiles).forEach(([index, file]) => {
+        formData.append(`cert_file_${index}`, file);
+      });
+
+      await action(formData);
+      alert('프로필이 성공적으로 저장되었습니다!');
+    } catch (error: any) {
+      console.error(error);
+      alert(`저장 실패: ${error?.message || '알 수 없는 오류가 발생했습니다.'}`);
     }
-
-    Object.entries(certFiles).forEach(([index, file]) => {
-      formData.append(`cert_file_${index}`, file);
-    });
-
-    await action(formData);
-    alert('프로필이 성공적으로 저장되었습니다!');
   };
 
   return (
@@ -84,7 +88,6 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         <h2 className="text-lg font-semibold border-b pb-2">기본 정보 및 증명사진</h2>
         
         <div className="flex flex-col sm:flex-row gap-6 items-start">
-          {/* 증명사진 미리보기, 업로드 및 다운로드 */}
           <div className="flex flex-col items-center space-y-2">
             <div className="w-32 h-40 border-2 border-dashed rounded-md flex items-center justify-center overflow-hidden bg-muted/20 relative shadow-inner">
               {avatarPreview ? (
