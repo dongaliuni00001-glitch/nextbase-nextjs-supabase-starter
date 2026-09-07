@@ -19,14 +19,17 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
 function getSupabase() {
   if (!supabaseInstance) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // ANON_KEY 또는 PUBLISHABLE_KEY 둘 중 하나라도 들어가 있으면 인식하도록 처리
+    const supabaseKey = 
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Supabase URL and Anon Key are required.');
-      throw new Error('Supabase URL and Anon Key are required.');
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase URL and API Key are required.');
+      throw new Error('Supabase URL and API Key are required.');
     }
 
-    supabaseInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey);
   }
   return supabaseInstance;
 }
