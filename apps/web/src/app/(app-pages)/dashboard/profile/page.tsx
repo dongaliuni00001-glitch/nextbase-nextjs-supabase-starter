@@ -16,7 +16,7 @@ export default async function ProfilePage() {
     .eq('id', user.id)
     .single() as any);
 
-  // 서버 액션을 페이지 내에 정의하여 클라이언트에 prop으로 전달
+  // 서버 액션
   async function updateProfile(formData: FormData) {
     'use server';
     const supabaseServer = await createSupabaseClient();
@@ -37,9 +37,50 @@ export default async function ProfilePage() {
     const desired_location = formData.get('desired_location') as string;
     const career_summary = formData.get('career_summary') as string;
 
-    const certifications = JSON.parse((formData.get('certifications') as string) || '[]');
+    const rawCerts = JSON.parse((formData.get('certifications') as string) || '[]');
     const military_service = JSON.parse((formData.get('military_service') as string) || '[]');
     const portfolios = JSON.parse((formData.get('portfolios') as string) || '[]');
+
+    // 증명사진(아바타) 업로드 처리
+    const avatarFile = formData.get('avatar_file') as File;
+    let avatar_url = profile?.avatar_url || '';
+
+    if (avatarFile && avatarFile.size > 0) {
+      const avatarPath = `${currentUser.id}/avatar/${Date.now()}_${avatarFile.name}`;
+      const { error: avatarUploadError } = await supabaseServer.storage
+        .from('documents')
+        .upload(avatarPath, avatarFile);
+
+      if (!avatarUploadError) {
+        const { data: { publicUrl } } = supabaseServer.storage
+          .from('documents')
+          .getPublicUrl(avatarPath);
+        avatar_url = publicUrl;
+      }
+    }
+
+    // 자격증 증빙 파일 업로드 처리
+    const certifications = [];
+    for (let i = 0; i < rawCerts.length; i++) {
+      const cert = rawCerts[i];
+      const file = formData.get(`cert_file_${i}`) as File;
+      let proofUrl = cert.proofUrl || '';
+
+      if (file && file.size > 0) {
+        const filePath = `${currentUser.id}/certs/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabaseServer.storage
+          .from('documents')
+          .upload(filePath, file);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabaseServer.storage
+            .from('documents')
+            .getPublicUrl(filePath);
+          proofUrl = publicUrl;
+        }
+      }
+      certifications.push({ ...cert, proofUrl });
+    }
 
     const { error } = await (supabaseServer
       .from('profiles' as any)
@@ -57,6 +98,7 @@ export default async function ProfilePage() {
         desired_industry,
         desired_location,
         career_summary,
+        avatar_url,
         updated_at: new Date().toISOString(),
       })
       .eq('id', currentUser.id) as any);
