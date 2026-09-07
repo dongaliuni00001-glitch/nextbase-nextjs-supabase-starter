@@ -59,8 +59,8 @@ export default async function ProfilePage() {
       }
     }
 
-    // 자격증 증빙 파일 업로드 처리
-    const certifications = [];
+    // 자격증 증빙 파일 업로드 처리 (타입 명시)
+    const certifications: any[] = [];
     for (let i = 0; i < rawCerts.length; i++) {
       const cert = rawCerts[i];
       const file = formData.get(`cert_file_${i}`) as File;
