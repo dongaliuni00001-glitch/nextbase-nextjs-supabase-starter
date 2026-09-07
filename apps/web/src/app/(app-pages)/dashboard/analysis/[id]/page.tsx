@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import ResultDownloadButton from '@/components/ResultDownloadButton'; // 👈 1. 임포트 추가
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -43,6 +44,32 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
     bodyData = { content: item.body };
   }
 
+  // 👈 2. 다운로드할 마크다운 텍스트 조합
+  const markdownContent = `# [${bodyData.company || '기업 미지정'}] ${bodyData.jobRole || '직무 미지정'} - ${item.title}
+
+## 📝 자기소개서 본문
+${bodyData.content || item.description}
+
+---
+
+## ✨ AI 심층 분석 및 첨삭 리포트
+
+### 1. 종합 평가 (Summary)
+${bodyData.aiFeedback?.summary || '분석 결과가 없습니다.'}
+
+### 2. 주요 강점 (Strengths)
+${bodyData.aiFeedback?.strengths || '-'}
+
+### 3. 보완점 및 개선 제안 (Weaknesses)
+${bodyData.aiFeedback?.weaknesses || '-'}
+
+### 4. 핵심 키워드 매칭
+${bodyData.aiFeedback?.keywordAnalysis || '-'}
+
+### 5. 합격을 위한 전문가 코칭
+${bodyData.aiFeedback?.recommendation || '-'}
+`;
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-8">
       <div className="flex items-center justify-between">
@@ -53,9 +80,16 @@ export default async function AnalysisDetailPage({ params }: PageProps) {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">{item.title}</h1>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/archive">목록으로</Link>
-        </Button>
+        {/* 👈 3. 버튼 배치 (목록으로 버튼 옆) */}
+        <div className="flex items-center gap-2">
+          <ResultDownloadButton 
+            content={markdownContent} 
+            filename={`${bodyData.company || 'career'}-report.md`} 
+          />
+          <Button asChild variant="outline">
+            <Link href="/dashboard/archive">목록으로</Link>
+          </Button>
+        </div>
       </div>
 
       <Card>
