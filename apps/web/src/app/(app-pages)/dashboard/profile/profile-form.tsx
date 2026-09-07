@@ -13,11 +13,14 @@ const RANK_MAPPING: Record<string, string[]> = {
   기타: ['기타']
 };
 
+// 💡 Supabase 클라이언트를 컴포넌트 외부(파일 최상단)로 이동
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // 기존 컴포넌트 내부의 const supabase = createBrowserClient(...) 코드는 삭제되었습니다.
 
   const [gender, setGender] = useState(profile?.gender || '');
   
