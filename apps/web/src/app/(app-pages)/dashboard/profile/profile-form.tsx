@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import { useRouter } from 'next/navigation';
 
 const RANK_MAPPING: Record<string, string[]> = {
   육군: ['병장', '상병', '일병', '이병', '하사', '중사', '상사', '원사', '소위', '중위', '대위'],
@@ -26,6 +27,7 @@ function getSupabase() {
 }
 
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
+  const router = useRouter();
   const [gender, setGender] = useState(profile?.gender || '');
   
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
@@ -138,6 +140,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         alert(`저장 실패: ${result.error}`);
       } else {
         alert('프로필이 성공적으로 저장되었습니다!');
+        router.refresh(); // 저장 후 페이지 새로고침 및 데이터 갱신
       }
     } catch (error: any) {
       console.error(error);
