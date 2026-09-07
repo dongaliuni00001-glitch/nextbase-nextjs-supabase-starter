@@ -10,6 +10,8 @@ import {
   LogOut,
   Plus,
   Settings,
+  User as UserIcon, // 아이콘 이름 충돌 방지를 위해 별칭 사용
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -41,6 +43,7 @@ import { signOutAction } from '@/data/auth/sign-out';
 const navigationItems = [
   { title: '대시보드', url: '/dashboard', icon: LayoutDashboard },
   { title: '자소서 작성·첨삭', url: '/dashboard/editor', icon: FileText },
+  { title: '커리어 프로필 관리', url: '/dashboard/profile', icon: UserIcon },
   { title: '보관함 및 이력', url: '/dashboard/archive', icon: FolderArchive },
   { title: '설정 및 보안', url: '/dashboard/settings', icon: Settings },
 ];
@@ -48,6 +51,9 @@ const navigationItems = [
 export function AppSidebarContent({ user }: { user: User }) {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+
+  // 관리자 여부 확인 (Supabase user_metadata나 앱 설정에 맞춰 수정 가능)
+  const isAdmin = user.user_metadata?.role === 'admin';
 
   function handleSignOut() {
     startTransition(async () => {
@@ -102,6 +108,22 @@ export function AppSidebarContent({ user }: { user: User }) {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* 관리자 계정일 때만 사이드바에 노출되는 승인 관리 탭 */}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/dashboard/admin')}
+                    tooltip="신규 계정 승인 관리"
+                  >
+                    <Link href="/dashboard/admin">
+                      <ShieldCheck aria-hidden="true" />
+                      <span>신규 계정 승인 관리</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
