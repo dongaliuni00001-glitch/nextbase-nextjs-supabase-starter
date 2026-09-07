@@ -31,16 +31,13 @@ export const signUpAction = actionClient
     });
 
     if (error) {
+      console.error('Supabase Sign-Up Detailed Error:', error); // 콘솔에 상세 에러 출력
       throw new Error(error.message);
     }
 
     return data;
   });
-
-const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
+  
 
 /**
  * Signs in a user with email and password.
