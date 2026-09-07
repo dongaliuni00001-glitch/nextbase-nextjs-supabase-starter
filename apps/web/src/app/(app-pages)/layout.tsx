@@ -22,12 +22,12 @@ async function AuthGuard({ children }: { children: ReactNode }) {
     redirect('/login');
   }
 
-  // profiles 테이블에서 유저의 status 확인
-  const { data: profile } = await supabase
-    .from('profiles')
+  // profiles 테이블에서 유저의 status 확인 (타입 에러 우회)
+  const { data: profile } = await (supabase
+    .from('profiles' as any)
     .select('status')
     .eq('id', user.id)
-    .single();
+    .single() as any);
 
   // status가 pending인 경우 승인 대기 페이지로 리다이렉트
   if (profile?.status === 'pending') {
