@@ -12,7 +12,7 @@ const RANK_MAPPING: Record<string, string[]> = {
   기타: ['기타']
 };
 
-export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<void> }) {
+export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const [gender, setGender] = useState(profile?.gender || '');
   
   const [certifications, setCertifications] = useState<any[]>(profile?.certifications || []);
@@ -73,11 +73,16 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         formData.append(`cert_file_${index}`, file);
       });
 
-      await action(formData);
-      alert('프로필이 성공적으로 저장되었습니다!');
+      const result = await action(formData);
+      
+      if (result && !result.success) {
+        alert(`저장 실패: ${result.error}`);
+      } else {
+        alert('프로필이 성공적으로 저장되었습니다!');
+      }
     } catch (error: any) {
       console.error(error);
-      alert(`저장 실패: ${error?.message || '알 수 없는 오류가 발생했습니다.'}`);
+      alert(`저장 중 예기치 못한 오류가 발생했습니다: ${error?.message || '알 수 없는 오류'}`);
     }
   };
 
