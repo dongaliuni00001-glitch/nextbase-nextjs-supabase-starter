@@ -8,8 +8,8 @@ export async function updateSession(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -30,10 +30,6 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: Avoid adding logic between createServerClient and
-  // supabase.auth.getUser(). Extra work here can make session refresh bugs hard
-  // to diagnose.
-
   const protectedPages = [
     '/dashboard',
     '/private-item',
@@ -42,13 +38,29 @@ export async function updateSession(request: NextRequest) {
     '/item',
   ] as const;
 
+  // 차단할 퍼블릭 회원가입 경로 목록
+  const authPages = [
+    '/signup',
+    '/register',
+  ] as const;
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+
+  // 1. 퍼블릭 회원가입 페이지 접근 시 로그인 페이지로 강제 리다이렉트
+  if (authPages.some((page) => match(page)(pathname))) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  // 2. 인증되지 않은 사용자의 보호된 페이지 접근 차단
   if (
     !user &&
-    protectedPages.some((page) => match(page)(request.nextUrl.pathname))
+    protectedPages.some((page) => match(page)(pathname))
   ) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
