@@ -84,7 +84,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
         <h2 className="text-lg font-semibold border-b pb-2">기본 정보 및 증명사진</h2>
         
         <div className="flex flex-col sm:flex-row gap-6 items-start">
-          {/* 증명사진 미리보기 및 업로드 */}
+          {/* 증명사진 미리보기, 업로드 및 다운로드 */}
           <div className="flex flex-col items-center space-y-2">
             <div className="w-32 h-40 border-2 border-dashed rounded-md flex items-center justify-center overflow-hidden bg-muted/20 relative shadow-inner">
               {avatarPreview ? (
@@ -94,6 +94,12 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
               )}
             </div>
             <input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs w-36 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-secondary file:text-secondary-foreground cursor-pointer" />
+            
+            {profile?.avatar_url && !avatarFile && (
+              <a href={profile.avatar_url} download target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline whitespace-nowrap bg-blue-50 px-2 py-1 rounded text-center w-36">
+                증명사진 다운로드
+              </a>
+            )}
           </div>
 
           <div className="flex-1 w-full space-y-4">
