@@ -7,15 +7,20 @@ interface DownloadButtonProps {
   content: string;
   rawData?: any;
   filenamePrefix?: string;
+  filename?: string; // 👈 filename 속성 추가 지원
 }
 
 export default function ResultDownloadButton({
   content,
   rawData,
   filenamePrefix = 'career-report',
+  filename,
 }: DownloadButtonProps) {
   const [format, setFormat] = useState<'md' | 'txt' | 'json' | 'doc' | 'xls' | 'pdf' | 'png' | 'jpeg' | 'html' | 'rtf'>('md');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // 전달받은 파일명 우선순위 적용
+  const actualFilename = filename || filenamePrefix;
 
   const handleDownload = async () => {
     if (!content) return;
@@ -42,7 +47,7 @@ export default function ResultDownloadButton({
     } else if (format === 'html') {
       mimeType = 'text/html;charset=utf-8';
       extension = 'html';
-      fileContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${filenamePrefix}</title><style>body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; white-space: pre-wrap; background: #f9fafb; color: #111827; }</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`;
+      fileContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${actualFilename}</title><style>body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; white-space: pre-wrap; background: #f9fafb; color: #111827; }</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`;
     } else if (format === 'rtf') {
       mimeType = 'application/rtf;charset=utf-8';
       extension = 'rtf';
@@ -53,7 +58,7 @@ export default function ResultDownloadButton({
         printWindow.document.write(`
           <html>
             <head>
-              <title>${filenamePrefix}</title>
+              <title>${actualFilename}</title>
               <style>
                 body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; padding: 40px; white-space: pre-wrap; }
               </style>
@@ -103,7 +108,7 @@ export default function ResultDownloadButton({
 
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = `${filenamePrefix}.${ext}`;
+            link.download = `${actualFilename}.${ext}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -131,7 +136,7 @@ export default function ResultDownloadButton({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${filenamePrefix}.${extension}`;
+    link.download = `${actualFilename}.${extension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
