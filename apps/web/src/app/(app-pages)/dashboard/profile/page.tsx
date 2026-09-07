@@ -1,7 +1,6 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
-import { updateProfile } from './actions';
-import { unstable_noStore as noStore } from 'next/cache';
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
 
 export default async function ProfilePage() {
   noStore();
@@ -15,6 +14,55 @@ export default async function ProfilePage() {
     .select('*')
     .eq('id', user.id)
     .single() as any);
+
+  // 인라인 서버 액션 (파일 분리로 인한 경로/모듈 에러 원천 차단)
+  async function updateProfile(formData: FormData) {
+    'use server';
+    const supabaseServer = await createSupabaseClient();
+    const { data: { user: currentUser } } = await supabaseServer.auth.getUser();
+
+    if (!currentUser) {
+      throw new Error('인증되지 않은 유저입니다.');
+    }
+
+    const full_name = formData.get('full_name') as string;
+    const gender = formData.get('gender') as string;
+    const age = formData.get('age') ? parseInt(formData.get('age') as string, 10) : null;
+    const university = formData.get('university') as string;
+    const major = formData.get('major') as string;
+    const certifications = formData.get('certifications') as string;
+    const desired_role = formData.get('desired_role') as string;
+    const desired_industry = formData.get('desired_industry') as string;
+    const desired_location = formData.get('desired_location') as string;
+    const military_service = formData.get('military_service') as string;
+    const portfolio_url = formData.get('portfolio_url') as string;
+    const career_summary = formData.get('career_summary') as string;
+
+    const { error } = await (supabaseServer
+      .from('profiles' as any)
+      .update({
+        full_name,
+        gender,
+        age,
+        university,
+        major,
+        certifications,
+        desired_role,
+        desired_industry,
+        desired_location,
+        military_service,
+        portfolio_url,
+        career_summary,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', currentUser.id) as any);
+
+    if (error) {
+      throw new Error(`프로필 업데이트 실패: ${error.message}`);
+    }
+
+    revalidatePath('/dashboard/profile');
+  }
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-6">
