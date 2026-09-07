@@ -29,7 +29,7 @@ function getSupabase() {
 export function ProfileForm({ profile, action }: { profile: any; action: (formData: FormData) => Promise<any> }) {
   const router = useRouter();
   
-  // 데이터가 없거나 최초 등록 상태라면 기본적으로 수정 모드, 이미 데이터가 있으면 조회 모드로 시작할 수 있습니다.
+  // 데이터가 없거나 이름이 비어있으면 수정 모드, 이미 등록되어 있으면 조회(요약) 모드로 시작
   const [isEditing, setIsEditing] = useState(!profile?.full_name);
 
   const [gender, setGender] = useState(profile?.gender || '');
@@ -138,11 +138,11 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
 
       const result = await action(formData);
       
-      if (result && !result.success) {
+      if (result && result.success === false) {
         alert(`저장 실패: ${result.error}`);
       } else {
         alert('프로필이 성공적으로 저장되었습니다!');
-        setIsEditing(false); // 저장 성공 시 조회 화면으로 전환
+        setIsEditing(false); // 저장 성공 시 요약(조회) 화면으로 전환
         router.refresh();
       }
     } catch (error: any) {
@@ -153,7 +153,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     }
   };
 
-  // 💡 1. 조회(요약) 모드 화면
+  // 1. 조회(요약) 모드 화면
   if (!isEditing) {
     return (
       <div className="space-y-8 border p-6 rounded-lg bg-card shadow-sm">
@@ -245,7 +245,7 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
     );
   }
 
-  // 💡 2. 수정 모드 화면 (기존 입력 폼)
+  // 2. 수정 모드 화면 (기존 입력 폼)
   return (
     <form onSubmit={handleSubmit} className="space-y-8 border p-6 rounded-lg bg-card">
       <div className="flex justify-between items-center border-b pb-4">
@@ -528,7 +528,8 @@ export function ProfileForm({ profile, action }: { profile: any; action: (formDa
                 updated[index].title = e.target.value;
                 setPortfolios(updated);
               }} className="px-2 py-1 border rounded text-sm bg-background" />
-              <input type="url" placeholder="URL 링크" value={item.url || ''} onChange={(e) => {
+              {/* type을 url에서 text로 변경하여 유효성 검사로 인한 제출 차단 방지 */}
+              <input type="text" placeholder="URL 링크 (예: https://...)" value={item.url || ''} onChange={(e) => {
                 const updated = [...portfolios];
                 updated[index].url = e.target.value;
                 setPortfolios(updated);
