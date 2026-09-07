@@ -7,7 +7,7 @@ interface DownloadButtonProps {
   content: string;
   rawData?: any;
   filenamePrefix?: string;
-  filename?: string; // 👈 filename 속성 추가 지원
+  filename?: string;
 }
 
 export default function ResultDownloadButton({
@@ -19,11 +19,21 @@ export default function ResultDownloadButton({
   const [format, setFormat] = useState<'md' | 'txt' | 'json' | 'doc' | 'xls' | 'pdf' | 'png' | 'jpeg' | 'html' | 'rtf'>('md');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 전달받은 파일명 우선순위 적용
-  const actualFilename = filename || filenamePrefix;
+  // 오늘 날짜를 YYYY-MM-DD 형식으로 생성
+  const getFormattedDate = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const handleDownload = async () => {
     if (!content) return;
+
+    const dateStr = getFormattedDate();
+    const baseName = filename || filenamePrefix || 'career-report';
+    const finalFilename = `${baseName}-${dateStr}`;
 
     let fileContent = content;
     let mimeType = 'text/markdown;charset=utf-8';
@@ -47,7 +57,7 @@ export default function ResultDownloadButton({
     } else if (format === 'html') {
       mimeType = 'text/html;charset=utf-8';
       extension = 'html';
-      fileContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${actualFilename}</title><style>body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; white-space: pre-wrap; background: #f9fafb; color: #111827; }</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`;
+      fileContent = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${finalFilename}</title><style>body { font-family: 'Malgun Gothic', sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; white-space: pre-wrap; background: #f9fafb; color: #111827; }</style></head><body>${content.replace(/\n/g, '<br>')}</body></html>`;
     } else if (format === 'rtf') {
       mimeType = 'application/rtf;charset=utf-8';
       extension = 'rtf';
@@ -58,7 +68,7 @@ export default function ResultDownloadButton({
         printWindow.document.write(`
           <html>
             <head>
-              <title>${actualFilename}</title>
+              <title>${finalFilename}</title>
               <style>
                 body { font-family: 'Malgun Gothic', sans-serif; line-height: 1.6; padding: 40px; white-space: pre-wrap; }
               </style>
@@ -88,8 +98,8 @@ export default function ResultDownloadButton({
           </svg>
         `;
 
-        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
+        // Base64 인코딩을 적용하여 브라우저 보안 제약 및 로딩 오류 방지
+        const base64Svg = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`;
         const img = new Image();
 
         img.onload = () => {
@@ -108,12 +118,11 @@ export default function ResultDownloadButton({
 
             const link = document.createElement('a');
             link.href = dataUrl;
-            link.download = `${actualFilename}.${ext}`;
+            link.download = `${finalFilename}.${ext}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
           }
-          URL.revokeObjectURL(url);
           setIsProcessing(false);
         };
 
@@ -122,7 +131,7 @@ export default function ResultDownloadButton({
           setIsProcessing(false);
         };
 
-        img.src = url;
+        img.src = base64Svg;
         return;
       } catch (e) {
         console.error(e);
@@ -136,7 +145,7 @@ export default function ResultDownloadButton({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${actualFilename}.${extension}`;
+    link.download = `${finalFilename}.${extension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
