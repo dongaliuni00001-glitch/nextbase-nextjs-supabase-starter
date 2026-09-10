@@ -277,7 +277,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
-  
+
   // 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
@@ -320,90 +320,96 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         ];
       }
 
-      // 🔍 전문가 수준의 심층 평가 분석
-      const expertCritique = {
-        technicalDepth: `실무 적용 가능성과 기술적 타당성 측면에서 ${inferredTech}의 활용이 돋보이며, 변인 통제 및 공정/로직 최적화 관점에서 현업 실무 역량이 충분히 입증됨.`,
-        problemSolving: `프로젝트 진행 중 발생할 수 있는 한계점을 분석하고, 객관적인 데이터와 첨부된 ${fileCount}개의 증빙 자료를 통해 논리적인 트러블슈팅을 수행한 흔적이 명확함.`,
-        businessImpact: `단순 이론에 그치지 않고 가시적인 결과물과 성능 개선을 이끌어내어 직무 투입 시 즉각적인 성과 창출이 기대됨.`
-      };
+      import { NextResponse } from 'next/server';
+import OpenAI from 'openai';
 
-      // ✨ STAR 기법 기반 완성형 포트폴리오 텍스트 (이력서/자소서 직행용)
-      const starPortfolio = {
-        situation: `현업 실무 환경 및 과제 수행 과정에서 직면한 기술적·구조적 한계 극복과 최적의 결과물 도출 필요`,
-        task: `${inferredRole}로서 ${title} 프로젝트를 총괄하며 ${inferredTech}을 기반으로 한 성능/프로세스 최적화 완수`,
-        action: `철저한 사전 분석과 단계별 실험/개발 프로세스를 구축하고, 발생한 문제에 대해 데이터 기반의 트러블슈팅을 주도적으로 적용함`,
-        result: `정량적/정성적 목표치 달성 및 ${fileCount}개의 객관적 증빙 자료로 뒷받침되는 신뢰도 높은 최종 성과 창출`
-      };
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-      // 🎤 예상 면접 Q&A (방어 전략 포함)
-      const interviewQAs = [
-        {
-          question: `Q1. 본 프로젝트(${title})를 수행하면서 가장 극복하기 어려웠던 기술적 난관(트러블슈팅)은 무엇이며, 어떻게 해결했나요?`,
-          strategy: `실험/개발 과정에서의 변인 통제 실패 또는 예기치 않은 오류 상황을 가정하고, 이를 데이터와 논리적 분석으로 극복했던 구체적인 수치나 과정을 답변하세요.`
-        },
-        {
-          question: `Q2. 지원하신 직무(실무 R&D/QC/기획 등)에 이 프로젝트의 경험이 어떻게 직접적으로 기여할 수 있습니까?`,
-          strategy: `본문에서 강조된 '${inferredTech}' 역량이 입사 후 실무 프로세스 단축이나 품질 향상에 어떻게 직결되는지 연결지어 설명하세요.`
-        },
-        {
-          question: `Q3. 만약 당시 프로젝트로 다시 돌아간다면 어떤 부분을 더 보완하거나 개선하고 싶으신가요?`,
-          strategy: `초기 기획 단계에서의 리스크 예측 범위 확대나 확장성(Scalability) 측면을 보완하겠다고 답변하여 발전 가능성을 어필하세요.`
-        }
-      ];
+export async function POST(request: Request) {
+  try {
+    const { project, keptFiles, selectedJobs } = await request.json();
 
-      const metrics: Array<{ label: string; value: string }> = [
-        { label: '담당 역할', value: inferredRole },
-        { label: '연동된 증빙 자료', value: `${fileCount}개 검증됨` },
-        { label: 'AI 심층 등급', value: fileCount > 0 ? 'S등급 (최우수 실무 역량)' : 'A+등급 (우수)' },
-      ];
-
-      return { domainLabel, summary: desc, desc, expertCritique, starPortfolio, interviewQAs, chartData, metrics, tech: inferredTech, role: inferredRole };
-    } catch (err) {
-      console.error(err);
-      return null;
+    if (!project) {
+      return NextResponse.json({ error: '프로젝트 정보가 없습니다.' }, { status: 400 });
     }
-  }, [project, keptFiles]);
 
-  // 🤖 🤖 [AI가 직접 컨펌하고 동적으로 생성하는 맞춤형 분석 및 활용 전략 레포트]
-  const aiJobMatchingReports = useMemo(() => {
-    if (!project || selectedJobIds.length === 0) return [];
-    
-    const projectTitle = String(project.title || '');
-    const projectDesc = String(project.description || '').toLowerCase();
-    const projectRole = project.role || '핵심 담당자';
-    const fileCount = keptFiles.length;
+    const fileNames = (keptFiles || []).map((f: any) => f.name || f).join(', ');
 
-    return selectedJobIds.map(jobId => {
-      const job = savedJobPostings.find(j => j.id === jobId);
-      if (!job) return null;
+    const prompt = `
+    당신은 엄격하고 전문적인 수석 커리어 컨설턴트, 인사담당자(Recruiter), 그리고 기술 면접관입니다.
+    사용자의 프로젝트 정보와 첨부된 증빙 파일, 그리고 지원하려는 채용 공고들을 면밀히 분석하여 전문가 수준의 심층 평가, STAR 기법 기반 이력서/자소서용 포트폴리오 텍스트, 기술 면접 Q&A, 그리고 직무 정합성 분석 레포트를 JSON 형식으로 생성해 주세요.
 
-      const jobTitle = job.title;
-      const jobCompany = job.company;
-      const jobContent = job.content.toLowerCase();
+    [프로젝트 정보]
+    - 제목: ${project.title}
+    - 설명: ${project.description}
+    - 역할: ${project.role}
+    - 기술 스택/역량: ${project.tech_stack}
+    - 연동된 증빙 파일 목록: ${fileNames || '없음'}
 
-      let matchScore = 83;
-      const projectWords = projectDesc.split(/\s+/);
-      let matchedKeywordsCount = 0;
+    [지원 공고 목록]
+    ${JSON.stringify(selectedJobs || [])}
 
-      projectWords.forEach(word => {
-        if (word.length > 1 && jobContent.includes(word)) {
-          matchedKeywordsCount++;
+    반드시 아래의 JSON 구조에 맞춰 한글로 응답해 주세요. (다른 마크다운 설명 없이 순수 JSON 객체만 반환)
+    {
+      "domainLabel": "프로젝트 도메인 분류 (예: 공학/R&D 최적화 프로젝트, SW 개발 프로젝트 등)",
+      "summary": "프로젝트 종합 요약 한 문장",
+      "expertCritique": {
+        "technicalDepth": "기술적 깊이 및 실무 타당성에 대한 전문 평가",
+        "problemSolving": "문제 해결 및 트러블슈팅 과정에 대한 분석",
+        "businessImpact": "현업 투입 시 기대되는 비즈니스 임팩트 평가"
+      },
+      "starPortfolio": {
+        "situation": "STAR 기법 - Situation (배경 및 직면한 과제)",
+        "task": "STAR 기법 - Task (해결해야 할 목표와 역할)",
+        "action": "STAR 기법 - Action (구체적 실행 전략 및 트러블슈팅)",
+        "result": "STAR 기법 - Result (정량/정성적 최종 성과)"
+      },
+      "interviewQAs": [
+        { "question": "예상 면접 질문 1", "strategy": "AI 방어 및 답변 가이드 전략 1" },
+        { "question": "예상 면접 질문 2", "strategy": "AI 방어 및 답변 가이드 전략 2" },
+        { "question": "예상 면접 질문 3", "strategy": "AI 방어 및 답변 가이드 전략 3" }
+      ],
+      "metrics": [
+        { "label": "담당 역할", "value": "역할명" },
+        { "label": "연동된 증빙 자료", "value": "검증된 개수" },
+        { "label": "AI 심층 등급", "value": "S등급 등" }
+      ],
+      "chartData": [
+        { "phase": "1단계 이름", "value": 30 },
+        { "phase": "2단계 이름", "value": 60 },
+        { "phase": "3단계 이름", "value": 85 },
+        { "phase": "4단계 이름", "value": 100 }
+      ],
+      "jobReports": [
+        {
+          "jobId": "공고 ID",
+          "matchScore": 92,
+          "correlation": "해당 공고와 프로젝트의 실시간 교차 분석 내용",
+          "tailoringTips": [
+            "자소서 반영 팁 1",
+            "증빙 자료 교차 활용 팁 2",
+            "성과 어필 전략 3"
+          ]
         }
-      });
+      ]
+    }
+    `;
 
-      matchScore += Math.min(14, matchedKeywordsCount * 2);
-      if (fileCount > 0) matchScore += 3;
-      matchScore = Math.min(99, matchScore);
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+    });
 
-      const correlation = `[AI 실시간 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 비교 분석한 결과, 직무 정합도 점수는 ${matchScore}%로 산출되었습니다. 공고문이 요구하는 핵심 자격요건 및 우대사항과 본문의 실무 이력이 높은 연관성을 보입니다.`;
-      
-      // 💡 AI가 직접 컨펌하여 동적으로 생성하는 맞춤형 전략 (tailoringTips)
-      const jobFileCount = job.file_urls?.length || 0;
-      const tailoringTips: string[] = [
-        `[AI 직무 정합성 컨펌] '${jobCompany}'의 ${jobTitle} 공고에서 요구하는 핵심 자격요건과 본 프로젝트의 '${projectRole}' 수행 경험이 매우 긴밀하게 연결되어 있으므로, 자소서 지원동기 및 본문에 이 경험을 전면에 배치할 것을 AI가 컨펌합니다.`,
-        `[AI 증빙 자료 교차 활용] 본 프로젝트에 연동된 ${fileCount}개의 증빙 파일과 이 공고에 첨부된 ${jobFileCount}개의 공고 자료를 포트폴리오 및 면접 답변 시 상호 교차 인용하여 신뢰도를 극대화하세요.`,
-        `[AI 성과 어필 전략] 공고문이 강조하는 문제 해결 및 프로세스 최적화 요구사항에 맞춰, 본 프로젝트 내 트러블슈팅 과정과 정량적 성과 수치를 한눈에 드러나도록 수정하세요.`
-      ];
+    const aiResult = JSON.parse(completion.choices[0].message.content || '{}');
+    return NextResponse.json(aiResult);
+  } catch (error: any) {
+    console.error('OpenAI API 연동 오류:', error);
+    return NextResponse.json({ error: error.message || 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 });
+  }
+}
 
       const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
 
