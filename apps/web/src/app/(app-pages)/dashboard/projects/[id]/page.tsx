@@ -140,27 +140,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       if (newJobFiles && newJobFiles.length > 0) {
   for (let i = 0; i < newJobFiles.length; i++) {
     const file = newJobFiles[i];
-    const cleanFileName = file.name.replace(/['\s]/g, '_').replace(/[^a-zA-Z0-9가-힣._-]/g, '');
-    const fileName = `${Date.now()}_${cleanFileName}`;
-          
-          // 'project-files' -> 'projects' 로 수정
-          const { error: uploadError } = await supabase.storage
-            .from('projects') 
-            .upload(fileName, file);
+    
+    // 💡 파일 확장자 추출 및 안전한 랜덤 파일명 생성 (Invalid key 방지)
+    const fileExt = file.name.split('.').pop() || 'bin';
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
-          if (uploadError) {
-            console.error('파일 업로드 실패:', uploadError);
-            throw new Error(`파일 업로드 실패: ${uploadError.message}`);
-          }
+    const { error: uploadError } = await supabase.storage
+      .from('projects')
+      .upload(fileName, file);
 
-          const { data: { publicUrl } } = supabase.storage
-            .from('projects') // 'project-files' -> 'projects' 로 수정
-            .getPublicUrl(fileName);
-            
-          uploadedUrls.push(publicUrl);
-          uploadedNames.push(file.name);
-        }
-      }
+    if (uploadError) {
+      console.error('파일 업로드 실패:', uploadError);
+      throw new Error(`파일 업로드 실패: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('projects')
+      .getPublicUrl(fileName);
+      
+    uploadedUrls.push(publicUrl);
+    uploadedNames.push(file.name); // 화면에는 원래 한글 파일명이 예쁘게 출력됨
+  }
+}
       
       const newJobData = {
         company: newJobCompany.trim() || '미분류 기업',
