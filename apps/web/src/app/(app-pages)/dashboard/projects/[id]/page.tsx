@@ -94,7 +94,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 실시간 입력값 기반 AI 동적 분석 생성 함수
   const getAiAnalysis = () => {
     if (!project) return null;
     const desc = project.description || '';
@@ -110,7 +109,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
 
     if (filesCount > 0) {
-      strength += ` 첨부된 ${filesCount개의} 증빙 파일이 포트폴리오의 신뢰도를 높여줍니다.`;
+      strength += ` 첨부된 ${filesCount}개의 증빙 파일이 포트폴리오의 신뢰도를 높여줍니다.`;
     } else {
       feedback += ` 실험 결과서나 관련 증빙 파일을 추가로 업로드하면 서류 평가 경쟁력이 더욱 높아집니다.`;
     }
@@ -220,7 +219,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          {/* 실제 입력 내용 기반 AI 동적 분석 레포트 섹션 */}
           <div className="space-y-3 border-t pt-6">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm text-primary">🤖 AI 프로젝트 실시간 심층 분석 리포트</h3>
