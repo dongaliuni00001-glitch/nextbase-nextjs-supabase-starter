@@ -141,20 +141,26 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         for (let i = 0; i < newJobFiles.length; i++) {
           const file = newJobFiles[i];
           const fileName = `${Date.now()}_${file.name}`;
+          
+          // 'project-files' -> 'projects' 로 수정
           const { error: uploadError } = await supabase.storage
-            .from('project-files')
+            .from('projects') 
             .upload(fileName, file);
 
-          if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('project-files')
-              .getPublicUrl(fileName);
-            uploadedUrls.push(publicUrl);
-            uploadedNames.push(file.name);
+          if (uploadError) {
+            console.error('파일 업로드 실패:', uploadError);
+            throw new Error(`파일 업로드 실패: ${uploadError.message}`);
           }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('projects') // 'project-files' -> 'projects' 로 수정
+            .getPublicUrl(fileName);
+            
+          uploadedUrls.push(publicUrl);
+          uploadedNames.push(file.name);
         }
       }
-
+      
       const newJobData = {
         company: newJobCompany.trim() || '미분류 기업',
         title: newJobTitle.trim(),
@@ -206,17 +212,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         for (let i = 0; i < editJobNewFiles.length; i++) {
           const file = editJobNewFiles[i];
           const fileName = `${Date.now()}_${file.name}`;
+          
+          // 'project-files' -> 'projects' 로 수정
           const { error: uploadError } = await supabase.storage
-            .from('project-files')
+            .from('projects')
             .upload(fileName, file);
 
-          if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('project-files')
-              .getPublicUrl(fileName);
-            uploadedUrls.push(publicUrl);
-            uploadedNames.push(file.name);
+          if (uploadError) {
+            console.error('파일 업로드 실패:', uploadError);
+            throw new Error(`파일 업로드 실패: ${uploadError.message}`);
           }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('projects') // 'project-files' -> 'projects' 로 수정
+            .getPublicUrl(fileName);
+            
+          uploadedUrls.push(publicUrl);
+          uploadedNames.push(file.name);
         }
       }
 
