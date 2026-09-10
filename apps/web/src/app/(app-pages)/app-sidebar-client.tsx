@@ -48,7 +48,7 @@ const navigationItems = [
   { title: '설정 및 보안', url: '/dashboard/settings', icon: Settings },
 ];
 
-export function AppSidebarContent({ user }: { user: User }) {
+export function AppSidebarContent({ user, isAdmin }: { user: User; isAdmin: boolean }) {
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 

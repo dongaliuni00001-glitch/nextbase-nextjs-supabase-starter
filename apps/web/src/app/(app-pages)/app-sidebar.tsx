@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { getCachedLoggedInVerifiedSupabaseUser } from '@/rsc-data/supabase';
+import { createSupabaseClient } from '@/supabase-clients/server';
 import { AppSidebarContent } from './app-sidebar-client';
 
 async function SidebarHeaderContent() {
@@ -32,7 +33,18 @@ async function SidebarHeaderContent() {
 
 async function SidebarContentWrapper() {
   const user = (await getCachedLoggedInVerifiedSupabaseUser()) as any;
-  return <AppSidebarContent user={user} />;
+  
+  // DB의 profiles 테이블에서 정확한 role 조회
+  const supabase = await createSupabaseClient();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const isAdmin = profile?.role === 'admin';
+
+  return <AppSidebarContent user={user} isAdmin={isAdmin} />;
 }
 
 export async function AppSidebar() {
