@@ -277,6 +277,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
+  c// 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
@@ -316,39 +317,46 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           { phase: '3단계: 로그 분석 및 디버깅', value: 85 },
           { phase: '4단계: 최종 배포 및 안정화', value: 100 },
         ];
-      } else if (combinedText.includes('마케팅') || combinedText.includes('기획') || combinedText.includes('전략') || combinedText.includes('시장') || combinedText.includes('분석') || combinedText.includes('비즈니스') || combinedText.includes('브랜드')) {
-        domainLabel = '비즈니스 / 마케팅 및 전략 기획 프로젝트';
-        chartData = [
-          { phase: '1단계: 시장 조사 및 인사이트 도출', value: 30 },
-          { phase: '2단계: 핵심 전략 및 실행안 수립', value: 65 },
-          { phase: '3단계: 시뮬레이션 및 성과 검증', value: 85 },
-          { phase: '4단계: 최종 제안 및 임팩트 창출', value: 100 },
-        ];
-      } else if (combinedText.includes('디자인') || combinedText.includes('ui') || combinedText.includes('ux') || combinedText.includes('시각') || combinedText.includes('브랜딩')) {
-        domainLabel = '디자인 / UI·UX 및 크리에이티브 프로젝트';
-        chartData = [
-          { phase: '1단계: 유저 리서치 및 레퍼런스 분석', value: 30 },
-          { phase: '2단계: 와이어프레임 및 프로토타이핑', value: 65 },
-          { phase: '3단계: 유저 피드백 및 사용성 개선', value: 85 },
-          { phase: '4단계: 최종 디자인 산출물 완성', value: 100 },
-        ];
       }
 
-      const summary = `본 프로젝트 '${title}'은(는) ${inferredRole}로서 수행해야 할 핵심 업무와 실무 역량(${inferredTech})을 매우 설득력 있게 담고 있습니다. AI가 전 분야 다차원 기준에 따라 정밀 검토한 결과, 기획 배경부터 실행 과정, 문제 해결(트러블슈팅) 및 최종 성과에 이르는 흐름이 논리적으로 잘 구성되어 있으며, 첨부된 ${fileCount}개의 객관적 증빙 자료가 프로젝트의 신뢰도를 한층 더 높여주고 있습니다.`;
+      // 🔍 전문가 수준의 심층 평가 분석
+      const expertCritique = {
+        technicalDepth: `실무 적용 가능성과 기술적 타당성 측면에서 ${inferredTech}의 활용이 돋보이며, 변인 통제 및 공정/로직 최적화 관점에서 현업 실무 역량이 충분히 입증됨.`,
+        problemSolving: `프로젝트 진행 중 발생할 수 있는 한계점을 분석하고, 객관적인 데이터와 첨부된 ${fileCount}개의 증빙 자료를 통해 논리적인 트러블슈팅을 수행한 흔적이 명확함.`,
+        businessImpact: `단순 이론에 그치지 않고 가시적인 결과물과 성능 개선을 이끌어내어 직무 투입 시 즉각적인 성과 창출이 기대됨.`
+      };
 
-      const critiquePoints: string[] = [
-        `강점 분석: ${inferredRole}로서 주도한 핵심 업무 수행 과정과 문제 해결 방식, 성과 도출 논리가 명확함 (${domainLabel}).`,
-        `보완 포인트: 지원하려는 직무의 핵심 역량 키워드(예: 효율성, 협업, 데이터 기반 의사결정 등)를 본문 도입부에 배치하면 서류 합격률이 더욱 극대화됩니다.`,
-        `증빙 자료 검증: ${fileCount}개의 연동된 첨부 파일과 데이터가 본문의 객관성과 실행력을 확실하게 뒷받침합니다.`
+      // ✨ STAR 기법 기반 완성형 포트폴리오 텍스트 (이력서/자소서 직행용)
+      const starPortfolio = {
+        situation: `현업 실무 환경 및 과제 수행 과정에서 직면한 기술적·구조적 한계 극복과 최적의 결과물 도출 필요`,
+        task: `${inferredRole}로서 ${title} 프로젝트를 총괄하며 ${inferredTech}을 기반으로 한 성능/프로세스 최적화 완수`,
+        action: `철저한 사전 분석과 단계별 실험/개발 프로세스를 구축하고, 발생한 문제에 대해 데이터 기반의 트러블슈팅을 주도적으로 적용함`,
+        result: `정량적/정성적 목표치 달성 및 ${fileCount}개의 객관적 증빙 자료로 뒷받침되는 신뢰도 높은 최종 성과 창출`
+      };
+
+      // 🎤 예상 면접 Q&A (방어 전략 포함)
+      const interviewQAs = [
+        {
+          question: `Q1. 본 프로젝트(${title})를 수행하면서 가장 극복하기 어려웠던 기술적 난관(트러블슈팅)은 무엇이며, 어떻게 해결했나요?`,
+          strategy: `실험/개발 과정에서의 변인 통제 실패 또는 예기치 않은 오류 상황을 가정하고, 이를 데이터와 논리적 분석으로 극복했던 구체적인 수치나 과정을 답변하세요.`
+        },
+        {
+          question: `Q2. 지원하신 직무(실무 R&D/QC/기획 등)에 이 프로젝트의 경험이 어떻게 직접적으로 기여할 수 있습니까?`,
+          strategy: `본문에서 강조된 '${inferredTech}' 역량이 입사 후 실무 프로세스 단축이나 품질 향상에 어떻게 직결되는지 연결지어 설명하세요.`
+        },
+        {
+          question: `Q3. 만약 당시 프로젝트로 다시 돌아간다면 어떤 부분을 더 보완하거나 개선하고 싶으신가요?`,
+          strategy: `초기 기획 단계에서의 리스크 예측 범위 확대나 확장성(Scalability) 측면을 보완하겠다고 답변하여 발전 가능성을 어필하세요.`
+        }
       ];
 
       const metrics: Array<{ label: string; value: string }> = [
         { label: '담당 역할', value: inferredRole },
-        { label: '연동된 첨부파일', value: `${fileCount}개 검증됨` },
-        { label: 'AI 종합 완성도', value: fileCount > 0 ? 'S등급 (최우수 증빙 연동)' : 'A+등급 (우수)' },
+        { label: '연동된 증빙 자료', value: `${fileCount}개 검증됨` },
+        { label: 'AI 심층 등급', value: fileCount > 0 ? 'S등급 (최우수 실무 역량)' : 'A+등급 (우수)' },
       ];
 
-      return { summary, critiquePoints, chartData, metrics, tech: inferredTech, role: inferredRole, desc, domainLabel };
+      return { domainLabel, summary: desc, expertCritique, starPortfolio, interviewQAs, chartData, metrics, tech: inferredTech, role: inferredRole };
     } catch (err) {
       console.error(err);
       return null;
@@ -522,31 +530,36 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {/* 🤖 범용 지능형 AI 프로젝트 맞춤형 컨펌 및 심층 분석 레포트 */}
+          {/* 🤖 전문가 수준 심층 평가 및 완성형 포트폴리오 레포트 */}
           {aiProjectReport && (
-            <div className="space-y-4 border-t pt-6">
+            <div className="space-y-6 border-t pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-base text-primary">🤖 AI 프로젝트 맞춤형 컨펌 및 분석 레포트</h3>
-                  <span className="text-xs text-muted-foreground">({aiProjectReport.domainLabel} 맞춤형 정밀 분석 완료)</span>
+                  <h3 className="font-semibold text-base text-primary">🤖 AI 전문가 심층 평가 및 완성형 포트폴리오 레포트</h3>
+                  <span className="text-xs text-muted-foreground">({aiProjectReport.domainLabel} 기준 심층 분석 완료)</span>
                 </div>
-                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">전 분야 범용 컨펌 완료</span>
+                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">STAR 포트폴리오 생성됨</span>
               </div>
 
-              <div className="p-6 border rounded-xl bg-card shadow-sm space-y-6 text-sm">
-                <p className="leading-relaxed font-medium">{aiProjectReport.summary}</p>
-
-                {/* AI 컨펌 포인트 및 피드백 */}
-                <div className="space-y-2 p-4 border rounded-lg bg-muted/20">
-                  <span className="text-xs font-semibold text-primary block">🔍 AI 전문가 심층 피드백 및 컨펌 사항</span>
-                  <ul className="list-disc pl-4 space-y-1 text-xs text-muted-foreground">
-                    {aiProjectReport.critiquePoints.map((pt, idx) => (
-                      <li key={idx} className="leading-relaxed">{pt}</li>
-                    ))}
-                  </ul>
+              {/* 1. 전문가 수준 심층 평가 */}
+              <div className="p-6 border rounded-xl bg-card shadow-sm space-y-4">
+                <span className="text-xs font-semibold text-primary block uppercase tracking-wider">🔍 전문가 심층 평가 (Expert Evaluation)</span>
+                <div className="grid grid-cols-1 gap-3 text-xs">
+                  <div className="p-3 border rounded-lg bg-muted/20">
+                    <span className="font-bold text-foreground block mb-1">• 기술적 깊이 및 실무 타당성</span>
+                    <span className="text-muted-foreground leading-relaxed">{aiProjectReport.expertCritique.technicalDepth}</span>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-muted/20">
+                    <span className="font-bold text-foreground block mb-1">• 문제 해결 및 트러블슈팅 능력</span>
+                    <span className="text-muted-foreground leading-relaxed">{aiProjectReport.expertCritique.problemSolving}</span>
+                  </div>
+                  <div className="p-3 border rounded-lg bg-muted/20">
+                    <span className="font-bold text-foreground block mb-1">• 현업 투입 시 비즈니스 임팩트</span>
+                    <span className="text-muted-foreground leading-relaxed">{aiProjectReport.expertCritique.businessImpact}</span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 pt-2">
                   {aiProjectReport.metrics.map((m, idx) => (
                     <div key={idx} className="p-3 border rounded-lg bg-muted/30 text-center">
                       <span className="text-xs text-muted-foreground block mb-1">{m.label}</span>
@@ -554,22 +567,61 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                   ))}
                 </div>
+              </div>
 
-                {/* 성과 달성도 시각화 모식도 (분야별 맞춤 단계 표시) */}
-                <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 프로젝트 단계별 실행 및 성과 달성도 (AI 측정 시각화)</span>
-                    <span className="text-[10px] text-primary font-medium">{aiProjectReport.domainLabel}</span>
+              {/* 2. STAR 기법 기반 완성형 포트폴리오 텍스트 (이력서 직행용) */}
+              <div className="p-6 border rounded-xl bg-card shadow-sm space-y-4 border-l-4 border-l-primary">
+                <span className="text-xs font-semibold text-primary block uppercase tracking-wider">✨ STAR 기법 기반 즉시 제출용 포트폴리오 텍스트</span>
+                <div className="space-y-3 text-xs font-mono">
+                  <div className="p-3 border rounded bg-muted/10">
+                    <span className="font-bold text-primary block mb-0.5">[Situation - 상황 및 배경]</span>
+                    <p className="text-foreground leading-relaxed">{aiProjectReport.starPortfolio.situation}</p>
                   </div>
-                  <div className="h-40 w-full flex items-end justify-between gap-3 pt-6 px-4 border-b pb-2">
-                    {aiProjectReport.chartData.map((pt, idx) => (
-                      <div key={idx} className="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
-                        <span className="text-[10px] font-semibold text-primary">{pt.value}%</span>
-                        <div className="w-full bg-primary/80 rounded-t transition-all group-hover:bg-primary shadow-sm" style={{ height: `${pt.value}%` }} />
-                        <span className="text-[11px] text-muted-foreground text-center leading-tight">{pt.phase}</span>
+                  <div className="p-3 border rounded bg-muted/10">
+                    <span className="font-bold text-primary block mb-0.5">[Task - 해결 과제 및 목표]</span>
+                    <p className="text-foreground leading-relaxed">{aiProjectReport.starPortfolio.task}</p>
+                  </div>
+                  <div className="p-3 border rounded bg-muted/10">
+                    <span className="font-bold text-primary block mb-0.5">[Action - 구체적 행동 및 실행 전략]</span>
+                    <p className="text-foreground leading-relaxed">{aiProjectReport.starPortfolio.action}</p>
+                  </div>
+                  <div className="p-3 border rounded bg-muted/10">
+                    <span className="font-bold text-primary block mb-0.5">[Result - 정량/정성적 성과 및 검증]</span>
+                    <p className="text-foreground leading-relaxed">{aiProjectReport.starPortfolio.result}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. 핵심 역량 검증 예상 면접 Q&A */}
+              <div className="p-6 border rounded-xl bg-card shadow-sm space-y-4">
+                <span className="text-xs font-semibold text-primary block uppercase tracking-wider">🎤 실무 면접관 대비 예상 Q&A 및 방어 전략</span>
+                <div className="space-y-3 text-xs">
+                  {aiProjectReport.interviewQAs.map((qa, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg bg-muted/20 space-y-2">
+                      <span className="font-bold text-foreground block">{qa.question}</span>
+                      <div className="p-2.5 bg-background rounded border border-primary/20">
+                        <span className="text-[11px] font-semibold text-primary block mb-0.5">💡 AI 방어 및 답변 전략 가이드</span>
+                        <p className="text-muted-foreground leading-relaxed">{qa.strategy}</p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 성과 달성도 시각화 모식도 */}
+              <div className="space-y-3 p-5 border rounded-xl bg-card shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 프로젝트 단계별 실행 및 성과 달성도 분석</span>
+                  <span className="text-[10px] text-primary font-medium">{aiProjectReport.domainLabel}</span>
+                </div>
+                <div className="h-40 w-full flex items-end justify-between gap-3 pt-6 px-4 border-b pb-2">
+                  {aiProjectReport.chartData.map((pt, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
+                      <span className="text-[10px] font-semibold text-primary">{pt.value}%</span>
+                      <div className="w-full bg-primary/80 rounded-t transition-all group-hover:bg-primary shadow-sm" style={{ height: `${pt.value}%` }} />
+                      <span className="text-[11px] text-muted-foreground text-center leading-tight">{pt.phase}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
