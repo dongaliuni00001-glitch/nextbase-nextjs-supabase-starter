@@ -314,28 +314,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchAIAnalysis();
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
 
-  if (loading) {
-    return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
-  }
-
-  if (!project) {
-    return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
-  }
-  
-  // 분석 중 로딩 UI 예시 (필요시 배치)
-  {isAnalyzing && (
-    <div className="p-8 text-center text-xs text-muted-foreground border rounded-xl bg-muted/20 animate-pulse">
-      🤖 OpenAI 수석 컨설턴트 AI가 프로젝트 내용과 첨부파일을 심층 분석하여 STAR 포트폴리오를 작성하고 있습니다...
-    </div>
-  )}
-
-      const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
-
-      return { job, matchScore, correlation, tailoringTips, resumeBullet };
-    }).filter(Boolean);
-  }, [project, keptFiles, selectedJobIds, savedJobPostings]);
-
-  if (loading) {
+ if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
   }
 
@@ -345,6 +324,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
+      {/* 🤖 분석 중 로딩 UI */}
+      {isAnalyzing && (
+        <div className="p-8 text-center text-xs text-muted-foreground border rounded-xl bg-muted/20 animate-pulse">
+          🤖 OpenAI 수석 컨설턴트 AI가 프로젝트 내용과 첨부파일을 심층 분석하여 STAR 포트폴리오를 작성하고 있습니다...
+        </div>
+      )}
+
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
