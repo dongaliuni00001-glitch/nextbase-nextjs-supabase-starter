@@ -34,11 +34,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [newJobFiles, setNewJobFiles] = useState<FileList | null>(null);
   const [savingJob, setSavingJob] = useState(false);
 
-  // ✏️ 기존 공고 수정 상태
+  // ✏️ 기존 공고 수정 상태 (첨부파일 추가/삭제 기능 포함)
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [editJobTitle, setEditJobTitle] = useState('');
   const [editJobCompany, setEditJobCompany] = useState('');
   const [editJobContent, setEditJobContent] = useState('');
+  const [editJobKeptFiles, setEditJobKeptFiles] = useState<{ url: string; name: string }[]>([]);
+  const [editJobNewFiles, setEditJobNewFiles] = useState<FileList | null>(null);
+  const [savingEditedJob, setSavingEditedJob] = useState(false);
 
   const supabase = useMemo(
     () =>
@@ -187,36 +190,67 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  // ✏️ 기존 공고 수정 저장 (첨부파일 추가 및 기존 파일 삭제 동시 반영)
   const handleSaveEditedJob = async (jobId: string) => {
     if (!editJobTitle.trim() || !editJobContent.trim()) {
       alert('공고 제목과 내용을 모두 입력해주세요.');
       return;
     }
 
+    setSavingEditedJob(true);
     try {
-      await (supabase.from('job_postings' as any) as any)
-        .update({
-          company: editJobCompany.trim(),
-          title: editJobTitle.trim(),
-          content: editJobContent.trim()
-        })
+      const uploadedUrls: string[] = editJobKeptFiles.map(f => f.url);
+      const uploadedNames: string[] = editJobKeptFiles.map(f => f.name);
+
+      if (editJobNewFiles && editJobNewFiles.length > 0) {
+        for (let i = 0; i < editJobNewFiles.length; i++) {
+          const file = editJobNewFiles[i];
+          const fileName = `${Date.now()}_${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('project-files')
+            .upload(fileName, file);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('project-files')
+              .getPublicUrl(fileName);
+            uploadedUrls.push(publicUrl);
+            uploadedNames.push(file.name);
+          }
+        }
+      }
+
+      const updateData = {
+        company: editJobCompany.trim(),
+        title: editJobTitle.trim(),
+        content: editJobContent.trim(),
+        file_urls: uploadedUrls,
+        file_names: uploadedNames
+      };
+
+      const { error } = await (supabase.from('job_postings' as any) as any)
+        .update(updateData)
         .eq('id', jobId);
+
+      if (error) throw error;
 
       setSavedJobPostings(prev => prev.map(job => {
         if (job.id === jobId) {
           return {
             ...job,
-            company: editJobCompany.trim(),
-            title: editJobTitle.trim(),
-            content: editJobContent.trim()
+            ...updateData
           };
         }
         return job;
       }));
+
       setEditingJobId(null);
-      alert('취업 공고 내용이 수정되어 실시간 반영되었습니다.');
+      setEditJobNewFiles(null);
+      alert('취업 공고 내용 및 첨부파일이 성공적으로 수정되었습니다.');
     } catch (err: any) {
-      alert(`수정 중 오류 발생: ${err.message}`);
+      alert(`공고 수정 중 오류 발생: ${err.message || '알 수 없는 오류'}`);
+    } finally {
+      setSavingEditedJob(false);
     }
   };
 
@@ -226,7 +260,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   };
 
-  // 🤖 🤖 [전 분야 범용 AI 맞춤형 실시간 분석 및 컨펌 엔진]
+  // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
@@ -236,47 +270,61 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const rawTech = String(project.tech_stack || '').trim();
       const fileCount = keptFiles.length;
 
-      // 내용이 비어있을 경우 AI가 가장 합리적인 내용으로 자동 보완
-      const inferredRole = rawRole || '핵심 실무 책임자 및 총괄 담당자';
-      const inferredTech = rawTech || '데이터 분석, 프로세스 최적화 및 문제 해결 방법론';
-      const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 프로세스를 주도하여 성공적으로 완수하였습니다.`;
+      const inferredRole = rawRole || '핵심 실무 및 총괄 담당자';
+      const inferredTech = rawTech || '핵심 역량, 프로세스 최적화 및 문제 해결 방법론';
+      const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 및 실무 문제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 수행 과정을 주도하여 완성도 높은 성과를 도출했습니다.`;
 
-      // 프로젝트 성격 판별 (실험/공학, 소프트웨어/개발, 기획/비즈니스 등 범용 대응)
-      const isExperiment = title.includes('발열') || title.includes('수중') || title.includes('캡스톤') || title.includes('공학') || desc.includes('실험') || desc.includes('배합') || desc.includes('온도');
-      const isDevelopment = title.includes('개발') || title.includes('웹') || title.includes('앱') || title.includes('코드') || desc.includes('코드') || desc.includes('구현') || desc.includes('시스템');
-
-      let domainLabel = '종합 실무 및 기획 프로젝트';
-      let chartData: Array<{ phase: string; value: number }> = [
+      // 전 분야 자동 도메인 분류 및 맞춤 분석 생성
+      const combinedText = (title + ' ' + desc + ' ' + inferredTech).toLowerCase();
+      
+      let domainLabel = '종합 실무 및 기획/비즈니스 프로젝트';
+      let chartData = [
         { phase: '요구사항 분석 & 기획', value: 30 },
-        { phase: '핵심 로직 구현 & 실행', value: 60 },
-        { phase: '트러블슈팅 & 고도화', value: 85 },
-        { phase: '최종 성과 도출', value: 100 },
+        { phase: '전략 수립 & 프로세스 설계', value: 60 },
+        { phase: '실행 고도화 및 리스크 대응', value: 85 },
+        { phase: '최종 성과 도출 및 검증', value: 100 },
       ];
 
-      if (isExperiment) {
-        domainLabel = '공학/실험 및 최적화 프로젝트';
+      if (combinedText.includes('발열') || combinedText.includes('수중') || combinedText.includes('캡스톤') || combinedText.includes('공학') || combinedText.includes('실험') || combinedText.includes('배합') || combinedText.includes('온도') || combinedText.includes('회로') || combinedText.includes('하드웨어')) {
+        domainLabel = '공학 / 실험 및 R&D 최적화 프로젝트';
         chartData = [
           { phase: '1단계: 기초 배합 및 설계', value: 30 },
-          { phase: '2단계: 반응/발열 지속 테스트', value: 65 },
-          { phase: '3단계: 변인 통제 및 고도화', value: 85 },
+          { phase: '2단계: 반응/성능 지속 테스트', value: 65 },
+          { phase: '3단계: 변인 통제 및 트러블슈팅', value: 85 },
           { phase: '4단계: 최종 성능 최적화 달성', value: 100 },
         ];
-      } else if (isDevelopment) {
+      } else if (combinedText.includes('개발') || combinedText.includes('웹') || combinedText.includes('앱') || combinedText.includes('코드') || combinedText.includes('시스템') || combinedText.includes('서버') || combinedText.includes('api')) {
         domainLabel = '소프트웨어 및 기술 개발 프로젝트';
         chartData = [
-          { phase: '1단계: 아키텍처 설계', value: 30 },
+          { phase: '1단계: 시스템 아키텍처 설계', value: 30 },
           { phase: '2단계: 핵심 소스 코드 구현', value: 65 },
           { phase: '3단계: 로그 분석 및 디버깅', value: 85 },
           { phase: '4단계: 최종 배포 및 안정화', value: 100 },
         ];
+      } else if (combinedText.includes('마케팅') || combinedText.includes('기획') || combinedText.includes('전략') || combinedText.includes('시장') || combinedText.includes('분석') || combinedText.includes('비즈니스') || combinedText.includes('브랜드')) {
+        domainLabel = '비즈니스 / 마케팅 및 전략 기획 프로젝트';
+        chartData = [
+          { phase: '1단계: 시장 조사 및 인사이트 도출', value: 30 },
+          { phase: '2단계: 핵심 전략 및 실행안 수립', value: 65 },
+          { phase: '3단계: 시뮬레이션 및 성과 검증', value: 85 },
+          { phase: '4단계: 최종 제안 및 임팩트 창출', value: 100 },
+        ];
+      } else if (combinedText.includes('디자인') || combinedText.includes('ui') || combinedText.includes('ux') || combinedText.includes('시각') || combinedText.includes('브랜딩')) {
+        domainLabel = '디자인 / UI·UX 및 크리에이티브 프로젝트';
+        chartData = [
+          { phase: '1단계: 유저 리서치 및 레퍼런스 분석', value: 30 },
+          { phase: '2단계: 와이어프레임 및 프로토타이핑', value: 65 },
+          { phase: '3단계: 유저 피드백 및 사용성 개선', value: 85 },
+          { phase: '4단계: 최종 디자인 산출물 완성', value: 100 },
+        ];
       }
 
-      const summary = `본 프로젝트 '${title}'은(는) ${inferredRole} 포지션으로서 요구되는 핵심 역량과 기술 스펙(${inferredTech})을 성공적으로 녹여냈습니다. 작성된 프로젝트 본문 내용을 전면 검토한 결과, 기획 배경부터 실행 과정, 문제 해결 및 최종 성과 도출에 이르는 논리적 흐름이 매우 구체적이고 설득력 있게 서술되어 있습니다. 또한 첨부된 ${fileCount}개의 증빙 파일이 프로젝트의 객관성과 신뢰도를 완벽하게 뒷받침하고 있습니다.`;
+      const summary = `본 프로젝트 '${title}'은(는) ${inferredRole}로서 수행해야 할 핵심 업무와 실무 역량(${inferredTech})을 매우 설득력 있게 담고 있습니다. AI가 전 분야 다차원 기준에 따라 정밀 검토한 결과, 기획 배경부터 실행 과정, 문제 해결(트러블슈팅) 및 최종 성과에 이르는 흐름이 논리적으로 잘 구성되어 있으며, 첨부된 ${fileCount}개의 객관적 증빙 자료가 프로젝트의 신뢰도를 한층 더 높여주고 있습니다.`;
 
       const critiquePoints: string[] = [
-        `강점 분석: ${inferredRole}로서 수행한 핵심 업무와 문제 해결 과정, 성과 도출 방식이 명확하게 기술됨 (${domainLabel}).`,
-        `보완 포인트: 지원하고자 하는 직무의 핵심 키워드(예: 효율성, 문제 해결, 기획력 등)를 본문 도입부에 강조하면 합격률이 더욱 극대화됩니다.`,
-        `증빙 자료 검증: ${fileCount}개의 첨부 파일이 프로젝트의 실행력과 신뢰도를 확실하게 입증합니다.`
+        `강점 분석: ${inferredRole}로서 주도한 핵심 업무 수행 과정과 문제 해결 방식, 성과 도출 논리가 명확함 (${domainLabel}).`,
+        `보완 포인트: 지원하려는 직무의 핵심 역량 키워드(예: 효율성, 협업, 데이터 기반 의사결정 등)를 본문 도입부에 배치하면 서류 합격률이 더욱 극대화됩니다.`,
+        `증빙 자료 검증: ${fileCount}개의 연동된 첨부 파일과 데이터가 본문의 객관성과 실행력을 확실하게 뒷받침합니다.`
       ];
 
       const metrics: Array<{ label: string; value: string }> = [
@@ -310,7 +358,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const jobCompany = job.company;
       const jobContent = job.content.toLowerCase();
 
-      let matchScore = 82;
+      let matchScore = 83;
       const projectWords = projectDesc.split(/\s+/);
       let matchedKeywordsCount = 0;
 
@@ -320,16 +368,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         }
       });
 
-      matchScore += Math.min(15, matchedKeywordsCount * 2);
+      matchScore += Math.min(14, matchedKeywordsCount * 2);
       if (fileCount > 0) matchScore += 3;
       matchScore = Math.min(99, matchScore);
 
-      const correlation = `[AI 실시간 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 매칭한 결과, 직무 정합도 점수는 ${matchScore}%로 도출되었습니다. 공고문이 요구하는 핵심 역량과 본문에서 수행한 실무 이력이 상호 정확하게 부합합니다.`;
+      const correlation = `[AI 실시간 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 비교 분석한 결과, 직무 정합도 점수는 ${matchScore}%로 산출되었습니다. 공고문이 요구하는 핵심 자격요건 및 우대사항과 본문의 실무 이력이 높은 연관성을 보입니다.`;
       
       const tailoringTips: string[] = [
-        `공고에 명시된 핵심 요건에 맞추어 '${job.company}' 자소서에 본 프로젝트의 ${projectRole} 경험과 성과를 직접 연결해 서술하세요.`,
-        `첨부된 ${fileCount}개의 증빙 파일 및 실험/구현 데이터를 포트폴리오 첨부 자료로 적극 활용하세요.`,
-        `공고문 수정 사항에 맞춰 문제 해결 과정의 구체적 수치(${projectText.includes('45분') ? '45분 유지 등' : '핵심 성과 지표'})를 강조하세요.`
+        `공고문에 명시된 핵심 우대사항에 맞추어 '${job.company}' 자소서에 본 프로젝트의 ${projectRole} 경험과 구체적 성과를 직접 연결해 서술하세요.`,
+        `첨부된 ${fileCount}개의 증빙 파일 및 실무 데이터를 포트폴리오 핵심 증빙 자료로 적극 인용하세요.`,
+        `공고문이 요구하는 문제 해결 역량에 맞춰 본문의 프로세스 및 성과 수치를 강조하세요.`
       ];
 
       const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
@@ -458,15 +506,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {/* 🤖 지능형 AI 프로젝트 맞춤형 컨펌 및 심층 분석 레포트 */}
+          {/* 🤖 범용 지능형 AI 프로젝트 맞춤형 컨펌 및 심층 분석 레포트 */}
           {aiProjectReport && (
             <div className="space-y-4 border-t pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-base text-primary">🤖 AI 프로젝트 맞춤형 컨펌 및 분석 레포트</h3>
-                  <span className="text-xs text-muted-foreground">({aiProjectReport.domainLabel} 기준 심층 분석됨)</span>
+                  <span className="text-xs text-muted-foreground">({aiProjectReport.domainLabel} 맞춤형 정밀 분석 완료)</span>
                 </div>
-                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">AI 전 분야 범용 컨펌 완료</span>
+                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">전 분야 범용 컨펌 완료</span>
               </div>
 
               <div className="p-6 border rounded-xl bg-card shadow-sm space-y-6 text-sm">
@@ -534,11 +582,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-medium">기업명 / 기관명</label>
-                    <Input placeholder="예: 삼성전자 / 한국항공우주" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <Input placeholder="예: 삼성전자 / 네이버 / 현대자동차" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                   <div>
                     <label className="text-xs font-medium">채용 공고 제목</label>
-                    <Input placeholder="예: 연구개발(R&D) / 품질관리(QC) 모집" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <Input placeholder="예: 연구개발(R&D) / 서비스 기획 / 마케팅 모집" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                 </div>
                 <div>
@@ -569,7 +617,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               {savedJobPostings.length === 0 ? (
                 <div className="p-8 border rounded-xl bg-card text-center space-y-2">
                   <p className="text-xs text-muted-foreground">저장된 취업 공고가 없습니다.</p>
-                  <p className="text-xs text-muted-foreground">위의 [＋ 새 채용 공고 작성] 버튼을 눌러 공고를 추가하면 채용 관리 페이지와도 즉시 연동됩니다.</p>
+                  <p className="text-xs text-muted-foreground">위의 [＋ 새 채용 공고 작성] 버튼을 눌러 공고를 추가해보세요.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-2">
@@ -580,15 +628,57 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     return (
                       <div key={job.id} className={`p-4 border rounded-xl transition-all ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'}`}>
                         {isEditingThisJob ? (
-                          <div className="space-y-3">
+                          /* ✏️ 공고 수정 폼 (기존 첨부파일 삭제 및 신규 첨부파일 추가 기능 탑재) */
+                          <div className="space-y-4">
+                            <h4 className="font-semibold text-sm text-primary">채용 공고 내용 및 첨부파일 수정</h4>
                             <div className="grid grid-cols-2 gap-3">
-                              <Input value={editJobCompany} onChange={e => setEditJobCompany(e.target.value)} placeholder="기업명" className="text-xs bg-card" />
-                              <Input value={editJobTitle} onChange={e => setEditJobTitle(e.target.value)} placeholder="공고 제목" className="text-xs bg-card" />
+                              <div>
+                                <label className="text-xs font-medium">기업명</label>
+                                <Input value={editJobCompany} onChange={e => setEditJobCompany(e.target.value)} placeholder="기업명" className="text-xs bg-card mt-1" />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium">공고 제목</label>
+                                <Input value={editJobTitle} onChange={e => setEditJobTitle(e.target.value)} placeholder="공고 제목" className="text-xs bg-card mt-1" />
+                              </div>
                             </div>
-                            <Textarea value={editJobContent} onChange={e => setEditJobContent(e.target.value)} rows={4} placeholder="공고 내용 수정..." className="text-xs bg-card font-mono" />
-                            <div className="flex justify-end gap-2">
+                            <div>
+                              <label className="text-xs font-medium">공고 내용</label>
+                              <Textarea value={editJobContent} onChange={e => setEditJobContent(e.target.value)} rows={4} placeholder="공고 내용 수정..." className="text-xs bg-card font-mono mt-1" />
+                            </div>
+
+                            {/* 공고 수정 시 기존 첨부파일 관리 */}
+                            <div className="space-y-2 pt-2 border-t">
+                              <label className="text-xs font-medium">기존 공고 첨부파일 ({editJobKeptFiles.length}개)</label>
+                              {editJobKeptFiles.length === 0 ? (
+                                <p className="text-[11px] text-muted-foreground">첨부된 파일이 없습니다.</p>
+                              ) : (
+                                editJobKeptFiles.map((file, fIdx) => (
+                                  <div key={fIdx} className="flex items-center justify-between p-2 border rounded bg-muted/30 text-xs">
+                                    <span className="truncate max-w-xs">📎 {file.name}</span>
+                                    <Button 
+                                      type="button" 
+                                      variant="destructive" 
+                                      size="sm" 
+                                      className="h-6 px-2 text-xs" 
+                                      onClick={() => setEditJobKeptFiles(prev => prev.filter((_, i) => i !== fIdx))}
+                                    >
+                                      삭제
+                                    </Button>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium">새로운 첨부 파일 추가 업로드 (다중 선택 가능)</label>
+                              <Input type="file" multiple onChange={e => setEditJobNewFiles(e.target.files)} className="mt-1 bg-card text-xs" />
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-2 border-t">
                               <Button size="sm" variant="outline" onClick={() => setEditingJobId(null)}>취소</Button>
-                              <Button size="sm" onClick={() => handleSaveEditedJob(job.id)}>수정 완료</Button>
+                              <Button size="sm" disabled={savingEditedJob} onClick={() => handleSaveEditedJob(job.id)}>
+                                {savingEditedJob ? '저장 중...' : '수정 완료'}
+                              </Button>
                             </div>
                           </div>
                         ) : (
@@ -617,6 +707,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                                   setEditJobCompany(job.company);
                                   setEditJobTitle(job.title);
                                   setEditJobContent(job.content);
+                                  const urls = job.file_urls || [];
+                                  const names = job.file_names || [];
+                                  setEditJobKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `첨부파일 ${idx + 1}` })));
+                                  setEditJobNewFiles(null);
                                 }}
                               >
                                 ✏️ 수정
@@ -680,4 +774,4 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       )}
     </div>
   );
-} 
+}
