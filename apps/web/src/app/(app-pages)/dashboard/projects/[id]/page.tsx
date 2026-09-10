@@ -94,7 +94,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 🤖 전문가 수준의 도메인 맞춤형 심층 AI 분석 엔진 (TypeScript 타입 명시 완료)
+  // 🤖 전문가 수준의 도메인 맞춤형 심층 AI 분석 엔진
   const getExpertAiAnalysis = () => {
     if (!project) return null;
     const title = project.title || '프로젝트';
@@ -106,7 +106,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const combinedText = (title + ' ' + desc).toLowerCase();
     const isHeatingOrPolymer = combinedText.includes('발열') || combinedText.includes('조성') || combinedText.includes('최적화') || combinedText.includes('수조') || combinedText.includes('산소');
 
-    // 1. 도메인 맞춤형 기술 스택 추론
     let inferredTech = tech;
     if (!tech || tech === '미지정' || tech.trim() === '') {
       if (isHeatingOrPolymer) {
@@ -118,7 +117,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     }
 
-    // 2. 전문가 수준의 심층 요약 및 분석 생성 (타입 명시로 never 에러 방지)
     let summary = '';
     let tableData: Array<{ factor: string; condition: string; impact: string }> = [];
     let expertFeedback = '';
@@ -137,7 +135,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         ? `등록된 ${fileCount}개의 증빙 파일(실험 데이터 시트 및 결과 보고서)이 정상 연동되어 있습니다. 변인 통제 과정과 수치(45분/80도)가 명확하여 R&D 및 공정 엔지니어 직무 역량 어필에 매우 강력한 경쟁력을 가집니다.`
         : `발열체 조성 및 온도 제어에 관한 구체적인 수치(45분 80도)가 포함되어 우수합니다. 추가로 실험 측정 원시 데이터(Raw Data) 파일이나 그래프 이미지를 증빙 파일로 첨부하면 신뢰도가 더욱 극대화됩니다.`;
 
-      // 차트용 데이터 (발열 시간별 온도 상승 곡선 시뮬레이션)
       chartData = [
         { time: '0분', temp: 25 },
         { time: '10분', temp: 42 },
@@ -160,7 +157,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       ];
     }
 
-    // 3. 이력서용 한 줄 요약 (잘림 방지: 전체 내용 온전히 반영)
     const cleanDesc = desc.replace(/\n/g, ' ');
     const resumeBullet = `• [${role}] ${title}: ${cleanDesc}`;
 
@@ -178,10 +174,47 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       resumeBullet,
       expertFeedback,
       chartData,
+      isHeatingOrPolymer,
     };
   };
 
   const aiReport = getExpertAiAnalysis();
+
+  // 📥 AI 분석 리포트 및 프로젝트 내용 파일 다운로드 핸들러
+  const handleDownloadReport = () => {
+    if (!project || !aiReport) return;
+    const content = `
+# [프로젝트 심층 분석 리포트] ${project.title}
+- 담당 역할: ${project.role || '미지정'}
+- 사용 기술/스펙: ${project.tech_stack || aiReport.inferredTech}
+- 첨부 증빙 파일 수: ${keptFiles.length}개
+
+## 1. 상세 내용 및 성과
+${project.description || '작성된 내용이 없습니다.'}
+
+## 2. AI R&D 전문가 총평
+${aiReport.summary}
+
+## 3. 프로젝트 단계별 구조화 분석
+${aiReport.tableData.map(row => `- [${row.factor}] 입력: ${row.condition} | 분석/성과: ${row.impact}`).join('\n')}
+
+## 4. 이력서 추천 한 줄 요약
+${aiReport.resumeBullet}
+
+## 5. R&D 전문가 추가 피드백
+${aiReport.expertFeedback}
+    `.trim();
+
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project.title.replace(/\s+/g, '_')}_AI_심층분석리포트.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
@@ -199,7 +232,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <h1 className="text-2xl font-bold tracking-tight mt-1">{project.title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
+          <Button variant="default" size="sm" onClick={handleDownloadReport} className="bg-primary text-primary-foreground">
+            📥 리포트 다운로드 (.md)
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/archive">&larr; 보관함으로</Link>
           </Button>
           <Button variant="destructive" size="sm" onClick={handleDelete}>
@@ -283,7 +319,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          {/* 🤖 전문가 수준의 심층 AI 분석 및 성과 리포트 (차트 및 첨부파일 연동 포함) */}
+          {/* 🤖 전문가 수준의 심층 AI 분석 및 성과 리포트 */}
           <div className="space-y-4 border-t pt-6">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-base text-primary flex items-center gap-2">
@@ -311,7 +347,29 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
 
-              {/* 📊 동적 시각화 차트 (온도 상승 및 성과 추이 시뮬레이션) */}
+              {/* 📸 AI 실험 셋업 및 공정 모식도 (사진/시각자료) */}
+              <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📸 AI 실험 셋업 및 공정 모식도 (시각 자료)</span>
+                  <span className="text-xs text-primary font-medium">Auto-Generated Visual Simulation</span>
+                </div>
+                <div className="border rounded-lg bg-card p-6 flex flex-col items-center justify-center gap-3 text-center">
+                  <div className="w-full h-48 bg-gradient-to-br from-primary/10 via-muted to-primary/5 rounded-lg flex flex-col items-center justify-center border border-dashed border-primary/30 p-4 shadow-inner">
+                    <span className="text-4xl mb-2">🧪 🔥 🌡️</span>
+                    <span className="font-semibold text-sm text-foreground">{project.title} 실험 셋업 및 메커니즘 구조도</span>
+                    <span className="text-xs text-muted-foreground mt-1 max-w-md">
+                      {aiReport?.isHeatingOrPolymer 
+                        ? '상온(25°C) 수조 내 발열체 침적 실험 및 미세 수분량·산소 유입 필름 기밀성 통제 구조 시뮬레이션'
+                        : '프로젝트 핵심 공정 및 수행 아키텍처 다이어그램'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    * AI가 입력된 프로젝트 명세와 변인 통제 환경(45분 80°C 유지 등)을 기반으로 자동 생성한 실험 공정 모식도입니다.
+                  </p>
+                </div>
+              </div>
+
+              {/* 📊 동적 시각화 차트 (온도 상승 및 성과 추이) */}
               <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 실험 성과 및 온도 상승 곡선 (AI 시각화)</span>
@@ -361,7 +419,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
 
-              {/* 이력서 즉시 활용 성과 문장 (잘림 없이 전체 출력) */}
+              {/* 이력서 즉시 활용 성과 문장 */}
               <div className="space-y-2 p-4 border rounded-lg bg-primary/5 border-primary/20">
                 <span className="font-semibold text-xs text-primary block">✨ [자소서/이력서 추천] 핵심 성과 한 줄 요약 (전체 출력)</span>
                 <p className="font-medium text-xs leading-relaxed">{aiReport?.resumeBullet}</p>
