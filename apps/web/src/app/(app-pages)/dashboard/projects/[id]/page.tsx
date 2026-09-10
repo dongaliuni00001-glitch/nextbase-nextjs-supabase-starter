@@ -94,7 +94,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 🤖 전문가 수준의 도메인 맞춤형 심층 AI 분석 엔진 (텍스트 잘림 방지 및 첨부 파일 연동)
+  // 🤖 전문가 수준의 도메인 맞춤형 심층 AI 분석 엔진 (TypeScript 타입 명시 완료)
   const getExpertAiAnalysis = () => {
     if (!project) return null;
     const title = project.title || '프로젝트';
@@ -118,11 +118,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     }
 
-    // 2. 전문가 수준의 심층 요약 및 분석 생성 (잘림 방지: 전체 문장 유지)
+    // 2. 전문가 수준의 심층 요약 및 분석 생성 (타입 명시로 never 에러 방지)
     let summary = '';
-    let tableData = [];
+    let tableData: Array<{ factor: string; condition: string; impact: string }> = [];
     let expertFeedback = '';
-    let chartData = [];
+    let chartData: Array<{ time: string; temp: number }> = [];
 
     if (isHeatingOrPolymer) {
       summary = `본 프로젝트는 [${title}] 주제로, 발열체 내부의 발열 에너지 지속성과 열전달 효율 극대화를 위한 변인 통제 실험을 수행했습니다. ${role}로서 미세 수분량 조절, 산화용 구리 반응 제어, 그리고 산소 유입 필름의 기밀성 확보라는 핵심 인자를 도출하였으며, 수조 환경에서의 열용량 한계를 극복하고 45분 내 80도 유지라는 정량적 성과를 달성했습니다.`;
@@ -134,7 +134,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       ];
 
       expertFeedback = fileCount > 0 
-        ? `등록된 ${fileCount개의} 증빙 파일(실험 데이터 시트 및 결과 보고서)이 정상 연동되어 있습니다. 변인 통제 과정과 수치(45분/80도)가 명확하여 R&D 및 공정 엔지니어 직무 역량 어필에 매우 강력한 경쟁력을 가집니다.`
+        ? `등록된 ${fileCount}개의 증빙 파일(실험 데이터 시트 및 결과 보고서)이 정상 연동되어 있습니다. 변인 통제 과정과 수치(45분/80도)가 명확하여 R&D 및 공정 엔지니어 직무 역량 어필에 매우 강력한 경쟁력을 가집니다.`
         : `발열체 조성 및 온도 제어에 관한 구체적인 수치(45분 80도)가 포함되어 우수합니다. 추가로 실험 측정 원시 데이터(Raw Data) 파일이나 그래프 이미지를 증빙 파일로 첨부하면 신뢰도가 더욱 극대화됩니다.`;
 
       // 차트용 데이터 (발열 시간별 온도 상승 곡선 시뮬레이션)
@@ -164,7 +164,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const cleanDesc = desc.replace(/\n/g, ' ');
     const resumeBullet = `• [${role}] ${title}: ${cleanDesc}`;
 
-    const metrics = [
+    const metrics: Array<{ label: string; value: string }> = [
       { label: '담당 역할', value: role },
       { label: '증빙 파일 연동', value: `${fileCount}개 파일 반영됨` },
       { label: '성과 검증 여부', value: '정량 성능 지표 확보' },
