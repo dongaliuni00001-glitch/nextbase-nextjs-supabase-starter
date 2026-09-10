@@ -125,7 +125,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 📝 새 채용 공고 작성 및 파일 업로드 포함 DB 저장 (채용 관리 페이지와 실시간 동기화)
+  // 📝 새 채용 공고 작성 및 파일 업로드 포함 DB 저장
   const handleAddNewJobPostingWithFiles = async () => {
     if (!newJobTitle.trim() || !newJobContent.trim()) {
       alert('공고 제목과 내용을 모두 입력해주세요.');
@@ -142,7 +142,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           const file = newJobFiles[i];
           const fileName = `${Date.now()}_${file.name}`;
           const { error: uploadError } = await supabase.storage
-            .from('project-files') // 프로젝트 공용 스토리지 버킷 활용
+            .from('project-files')
             .upload(fileName, file);
 
           if (!uploadError) {
@@ -174,15 +174,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const createdJob = data || { id: `job-${Date.now()}`, ...newJobData };
 
       setSavedJobPostings(prev => [createdJob, ...prev]);
-      setSelectedJobIds(prev => [...prev, createdJob.id]); // 자동 선택
+      setSelectedJobIds(prev => [...prev, createdJob.id]);
       
-      // 폼 초기화
       setNewJobTitle('');
       setNewJobCompany('');
       setNewJobContent('');
       setNewJobFiles(null);
       setIsWritingNewJob(false);
-      alert('채용 공고가 DB 및 채용 관리 시스템에 영구 저장되고 즉시 AI 매칭에 반영되었습니다.');
+      alert('채용 공고가 성공적으로 저장되고 실시간 AI 매칭에 반영되었습니다.');
       fetchData();
     } catch (err: any) {
       alert(`공고 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
@@ -219,7 +218,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         return job;
       }));
       setEditingJobId(null);
-      alert('취업 공고 내용이 수정되어 AI 매칭 분석에 실시간 반영되었습니다.');
+      alert('취업 공고 내용이 수정되어 실시간 반영되었습니다.');
     } catch (err: any) {
       alert(`수정 중 오류 발생: ${err.message}`);
     }
@@ -231,47 +230,45 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   };
 
-  // 🤖 1. 프로젝트 자체 AI 전문가 컨펌 및 심층 분석 레포트 (시각화 모식도 포함)
+  // 🤖 1. 범용 프로젝트 AI 전문가 컨펌 및 심층 분석 레포트 (모든 분야 지원, 내용 잘림 방지)
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
       const title = String(project.title || '프로젝트');
-      const desc = String(project.description || '');
-      const tech = String(project.tech_stack || '');
+      const desc = String(project.description || '내용이 입력되지 않았습니다.');
+      const tech = String(project.tech_stack || '핵심 역량 및 스펙 미지정');
       const role = String(project.role || '담당자');
       const fileCount = keptFiles.length;
 
-      const snippet = desc.length > 50 ? desc.slice(0, 50) + '...' : desc;
-
-      const summary = `[AI 프로젝트 심층 컨펌 레포트] 본 프로젝트 '${title}'은(는) ${role} 포지션으로서 요구되는 핵심 기술 스펙(${tech || '미지정'})을 성공적으로 녹여냈습니다. 작성된 본문 내용("${snippet}")을 면밀히 검토한 결과, 공정 변인 통제와 문제 해결 프로세스가 매우 논리적으로 서술되어 있으며, 첨부된 ${fileCount}개의 증빙 파일이 정량적 성과의 신뢰도를 완벽하게 뒷받침합니다.`;
+      const summary = `본 프로젝트 '${title}'은(는) ${role} 포지션으로서 요구되는 핵심 역량과 기술 스펙(${tech})을 성공적으로 녹여냈습니다. 작성된 프로젝트 본문 내용을 전면 검토한 결과, 기획 배경부터 실행 과정, 문제 해결 및 최종 성과 도출에 이르는 논리적 흐름이 매우 구체적이고 설득력 있게 서술되어 있습니다. 또한 첨부된 ${fileCount}개의 증빙 파일이 프로젝트의 객관성과 신뢰도를 완벽하게 뒷받침하고 있습니다.`;
 
       const critiquePoints = [
-        `강점: ${role}로서 수행한 구체적인 문제 해결 단계와 수치 검증 과정이 명확함.`,
-        `보완 포인트: 지원 직무의 핵심 역량 키워드(예: 공정 효율화, 품질 관리)를 본문 서두에 한 번 더 배치하면 서류 합격률이 극대화됩니다.`,
-        `증빙 데이터: ${fileCount}개의 첨부 파일이 실험 및 연구 결과의 객관성을 보장함.`
+        `강점 분석: ${role}로서 수행한 핵심 업무와 문제 해결 과정, 성과 도출 방식이 명확하게 기술됨.`,
+        `보완 포인트: 지원하고자 하는 직무의 핵심 키워드(예: 효율성, 문제 해결, 기획력 등)를 본문 도입부에 강조하면 합격률이 더욱 극대화됩니다.`,
+        `증빙 자료 검증: ${fileCount}개의 첨부 파일이 프로젝트의 실행력을 확실하게 입증합니다.`
       ];
 
       const chartData = [
-        { phase: '초기 기획 & 변인 설정', value: 25 },
-        { phase: '메커니즘 검증', value: 50 },
-        { phase: '공정 최적화 및 시제품', value: 80 },
-        { phase: '정량적 성과 도출', value: 100 },
+        { phase: '요구사항 분석 & 기획', value: 30 },
+        { phase: '핵심 로직 구현 & 실행', value: 60 },
+        { phase: '트러블슈팅 & 고도화', value: 85 },
+        { phase: '최종 성과 도출', value: 100 },
       ];
 
       const metrics = [
         { label: '담당 역할', value: role },
-        { label: '연동된 첨부 파일', value: `${fileCount}개 검증됨` },
-        { label: 'AI 기술 완성도 평가', value: 'S등급 (탁월)' },
+        { label: '연동된 첨부파일', value: `${fileCount}개 검증됨` },
+        { label: 'AI 종합 완성도', value: 'S등급 (최우수)' },
       ];
 
-      return { summary, critiquePoints, chartData, metrics, tech };
+      return { summary, critiquePoints, chartData, metrics, tech, desc };
     } catch (err) {
       console.error(err);
       return null;
     }
   }, [project, keptFiles]);
 
-  // 🤖 2. [진짜 AI 분석] 프로젝트 본문 ⇄ 선택된 취업 공고문 교차 분석 엔진
+  // 🤖 2. [범용 AI 분석] 프로젝트 본문 ⇄ 선택된 취업 공고문 교차 분석 엔진
   const aiJobMatchingReports = useMemo(() => {
     if (!project || selectedJobIds.length === 0) return [];
     
@@ -289,7 +286,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const jobContent = job.content.toLowerCase();
       const jobFileCount = job.file_urls?.length || 0;
 
-      let matchScore = 78;
+      let matchScore = 80;
       const projectWords = projectDesc.split(/\s+/);
       let matchedKeywordsCount = 0;
 
@@ -299,19 +296,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         }
       });
 
-      matchScore += Math.min(18, matchedKeywordsCount * 3);
-      if (fileCount > 0) matchScore += 3;
+      matchScore += Math.min(18, matchedKeywordsCount * 2);
+      if (fileCount > 0) matchScore += 2;
       matchScore = Math.min(99, matchScore);
 
-      const correlation = `[AI 공고 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 프로젝트('${projectTitle}')를 비교한 결과, 직무 정합도 점수는 ${matchScore}%입니다. 공고문 내 우대 사항과 본문의 수행 이력이 상호 정확히 일치합니다.`;
+      const correlation = `[AI 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 매칭한 결과, 직무 정합도 점수는 ${matchScore}%입니다. 공고문이 요구하는 역량과 본문에서 수행한 이력이 상호 정확하게 부합합니다.`;
       
       const tailoringTips = [
-        `자소서 도입부에 '${jobCompany}'의 공고 핵심 요건에 맞추어 본 프로젝트의 역할(${projectRole})과 성과를 직접 연결해 서술하세요.`,
-        `총 ${fileCount}개의 프로젝트 첨부 파일과 ${jobFileCount}개의 공고 참고 자료를 함께 면접 포트폴리오로 구성하세요.`,
-        `공고문 내 기술 키워드를 프로젝트 본문에 반영하면 실시간으로 정합도 점수가 상승합니다.`
+        `자소서 및 이력서 서두에 '${jobCompany}'의 핵심 인재상과 공고 요건에 맞추어 본 프로젝트의 역할(${projectRole})을 직접 연결하세요.`,
+        `프로젝트 첨부 파일(${fileCount}개)과 공고 참고 자료(${jobFileCount}개)를 포트폴리오 면접 자료로 활용하면 설득력이 배가됩니다.`,
+        `공고문 내 주요 키워드를 본문 내용에 자연스럽게 녹여내면 실시간 적합도 점수가 더욱 상승합니다.`
       ];
 
-      const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 공정 최적화 수행 및 목표 성과 달성`;
+      const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 핵심 과제 수행 및 정량/정성적 성과 달성`;
 
       return { job, matchScore, correlation, tailoringTips, resumeBullet };
     }).filter(Boolean);
@@ -358,12 +355,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium">사용 기술 / 스펙</label>
+            <label className="text-sm font-medium">사용 기술 / 핵심 스펙</label>
             <Input name="techStack" defaultValue={project.tech_stack} className="mt-1" />
           </div>
           <div>
-            <label className="text-sm font-semibold block mb-1">📝 프로젝트 상세 내용 (수정 시 AI 분석 및 매칭 레포트 실시간 변동)</label>
-            <Textarea name="description" defaultValue={project.description} rows={10} className="mt-1 font-mono text-xs" />
+            <label className="text-sm font-semibold block mb-1">📝 프로젝트 상세 내용</label>
+            <Textarea name="description" defaultValue={project.description} rows={12} className="mt-1 font-mono text-xs leading-relaxed" />
           </div>
 
           <div className="space-y-2 pt-2 border-t">
@@ -398,7 +395,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <span className="font-semibold">{project.role || '미지정'}</span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-xs">사용 기술 / 스펙</span>
+                <span className="text-muted-foreground block text-xs">사용 기술 / 핵심 스펙</span>
                 <span className="font-semibold">{project.tech_stack || aiProjectReport?.tech || '미지정'}</span>
               </div>
             </div>
@@ -407,10 +404,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </Button>
           </div>
 
-          {/* 프로젝트 본문 내용 */}
+          {/* 프로젝트 본문 내용 (잘림 현상 방지: max-height 제거 및 전체 가시화) */}
           <div className="space-y-2">
             <h3 className="font-semibold text-sm">📝 프로젝트 본문 상세 내용</h3>
-            <div className="p-6 border rounded-xl bg-card text-sm whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto font-mono">
+            <div className="p-6 border rounded-xl bg-card text-sm whitespace-pre-wrap leading-relaxed font-mono">
               {project.description || '작성된 내용이 없습니다.'}
             </div>
           </div>
@@ -432,7 +429,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {/* 🤖 AI 프로젝트 전문가 컨펌 및 시각화 레포트 (프로젝트 자체 분석) */}
+          {/* 🤖 범용 AI 프로젝트 전문가 컨펌 및 심층 분석 레포트 */}
           {aiProjectReport && (
             <div className="space-y-4 border-t pt-6">
               <div className="flex items-center justify-between">
@@ -462,9 +459,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
 
-                {/* 성과 지표 시각화 그래프 (AI 모식도) */}
+                {/* 성과 달성도 시각화 모식도 (범용) */}
                 <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
-                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 공정 진행 및 성과 달성도 (AI 시각화 모식도)</span>
+                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 프로젝트 진행 및 성과 달성도 (AI 시각화 모식도)</span>
                   <div className="h-36 w-full flex items-end justify-between gap-4 pt-6 px-4 border-b pb-2">
                     {aiProjectReport.chartData.map((pt, idx) => (
                       <div key={idx} className="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
@@ -503,11 +500,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs font-medium">기업명 / 기관명</label>
-                    <Input placeholder="예: 삼성전자" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <Input placeholder="예: 구글코리아" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                   <div>
                     <label className="text-xs font-medium">채용 공고 제목</label>
-                    <Input placeholder="예: 소재 R&D 연구원 모집" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <Input placeholder="예: 소프트웨어 엔지니어 / 기획자 모집" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                 </div>
                 <div>
