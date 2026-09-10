@@ -25,7 +25,7 @@ export async function uploadAndParseJobPosting(formData: FormData) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file && file.size > 0) {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop() || 'file';
         const fileNamePath = `${user.id}/${Date.now()}_${i}.${fileExt}`;
         
         const { error: uploadError } = await supabase.storage
@@ -72,6 +72,31 @@ export async function uploadAndParseJobPosting(formData: FormData) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
+    console.error('Job posting upload error:', err);
     return { success: false, message: err.message || '서버 통신 중 오류가 발생했습니다.' };
+  }
+}
+
+export async function deleteJobPostingAction(id: string) {
+  try {
+    const supabase = await createSupabaseClient();
+    const { error } = await (supabase.from('job_postings' as any) as any).delete().eq('id', id);
+    if (error) return { success: false, message: error.message };
+    revalidatePath('/dashboard/archive');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
+  }
+}
+
+export async function deleteProjectAction(id: string) {
+  try {
+    const supabase = await createSupabaseClient();
+    const { error } = await (supabase.from('projects' as any) as any).delete().eq('id', id);
+    if (error) return { success: false, message: error.message };
+    revalidatePath('/dashboard/archive');
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, message: err.message };
   }
 }
