@@ -214,7 +214,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         for (let i = 0; i < editJobNewFiles.length; i++) {
           const file = editJobNewFiles[i];
           
-          // 💡 파일명에 한글/특수문자가 들어가서 발생하는 Invalid key 에러 원천 차단
           const fileExt = file.name.split('.').pop() || 'bin';
           const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
@@ -232,7 +231,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             .getPublicUrl(fileName);
             
           uploadedUrls.push(publicUrl);
-          uploadedNames.push(file.name); // 화면에는 원래 한글 파일명이 표시됨
+          uploadedNames.push(file.name);
         }
       }
 
@@ -276,16 +275,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   };
 
-  // 💡 컴포넌트 선언은 파일 최상단 또는 독립된 위치에서 단 한 번만 시작되어야 합니다.
-  export default function ProjectDetailPage({ params }: { params: { id: string } }) {
-    // 1. 상태 정의 (반드시 컴포넌트 함수 중괄호 { 바로 안쪽에 있어야 합니다)
-    const [aiProjectReport, setAiProjectReport] = useState<any>(null);
-    const [jobReports, setJobReports] = useState<any[]>([]);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    
-    const aiJobMatchingReports = jobReports || [];
-  
-  // 2. OpenAI API 연동 백엔드 호출
+  // 🤖 OpenAI API 연동 백엔드 호출 useEffect
   useEffect(() => {
     async function fetchAIAnalysis() {
       if (!project) return;
@@ -414,6 +404,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               프로젝트 수정
             </Button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
           {/* 프로젝트 본문 내용 */}
           <div className="space-y-2">
