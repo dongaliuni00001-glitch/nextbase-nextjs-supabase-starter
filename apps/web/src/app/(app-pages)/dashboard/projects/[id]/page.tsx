@@ -312,8 +312,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
 
     fetchAIAnalysis();
-  }, [project, keptFiles, selectedJobIds, savedJobPostings]);
+// 1. 이전 useEffect나 함수가 끝나는 지점
+        fetchAIAnalysis();
+      }, [project, keptFiles, selectedJobIds, savedJobPostings]);
+    } // 👈 누락되기 쉬운 닫는 중괄호가 있는지 확인하세요.
 
+    // 2. 컴포넌트 선언은 반드시 파일의 최상위 레벨에서 시작해야 합니다.
+    export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+      const [aiJobMatchingReports, setAiJobMatchingReports] = useState<any>([]);
+      
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   // ... 모든 hooks 및 useEffect 로직들 ...
 
@@ -339,14 +346,6 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
       )}
 
       {/* 상단 헤더 및 나머지 JSX 코드들 */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div>
-          <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 AI 실시간 채용 공고 매칭</span>
-          <h1 className="text-2xl font-bold tracking-tight mt-1">{project.title}</h1>
-        </div>
-      </div>
-    
-      {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
           <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 AI 실시간 채용 공고 매칭</span>
