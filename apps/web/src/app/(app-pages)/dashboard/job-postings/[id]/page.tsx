@@ -18,6 +18,9 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // 수정 모드 시 유지할 기존 파일 상태 관리
+  const [keptFiles, setKeptFiles] = useState<{ url: string; name: string }[]>([]);
+
   const supabase = useMemo(
     () =>
       createBrowserClient(
@@ -34,6 +37,9 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
       .single();
     if (data) {
       setPosting(data);
+      const urls = data.file_urls || [];
+      const names = data.file_names || [];
+      setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `파일 ${idx + 1}` })));
     }
     setLoading(false);
   };
@@ -42,11 +48,21 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
     fetchPosting();
   }, [id, supabase]);
 
+  const handleRemoveKeptFile = (index: number) => {
+    setKeptFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
     const formData = new FormData(e.currentTarget);
     formData.append('id', id);
+
+    // 유지할 기존 파일 정보 추가
+    keptFiles.forEach(file => {
+      formData.append('keptFileUrls', file.url);
+      formData.append('keptFileNames', file.name);
+    });
 
     const res = await updateJobPostingAction(formData);
     setSubmitting(false);
@@ -120,12 +136,32 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
             <label className="text-sm font-medium">지원 방법</label>
             <Input name="applicationMethod" defaultValue={posting.application_method} className="mt-1" />
           </div>
+
+          <div className="space-y-2 pt-2">
+            <label className="text-sm font-medium">기존 첨부 파일 관리 (삭제 가능)</label>
+            {keptFiles.length === 0 ? (
+              <p className="text-xs text-muted-foreground">유지되는 기존 파일이 없습니다.</p>
+            ) : (
+              <div className="space-y-2">
+                {keptFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 border rounded bg-muted/30 text-xs">
+                    <span className="truncate max-w-xs">{file.name}</span>
+                    <Button type="button" variant="destructive" size="sm" className="h-6 px-2 text-xs" onClick={() => handleRemoveKeptFile(idx)}>
+                      삭제
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
-            <label className="text-sm font-medium">추가 증빙/공고 파일 업로드 (선택)</label>
+            <label className="text-sm font-medium">새 증빙/공고 파일 추가 업로드 (선택)</label>
             <Input type="file" name="files" multiple className="mt-1" />
           </div>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => { setIsEditing(false); fetchPosting(); }}>취소</Button>
             <Button type="submit" disabled={submitting}>{submitting ? '저장 중...' : '저장'}</Button>
           </div>
         </form>

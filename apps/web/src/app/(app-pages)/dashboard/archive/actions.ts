@@ -1,4 +1,3 @@
-// apps/web/src/app/(app-pages)/dashboard/archive/actions.ts
 'use server';
 
 import { createSupabaseClient } from '@/supabase-clients/server';
@@ -95,15 +94,13 @@ export async function updateJobPostingAction(formData: FormData) {
     const deadline = formData.get('deadline') as string;
     const jobDescription = formData.get('jobDescription') as string;
     const applicationMethod = formData.get('applicationMethod') as string;
+    
+    const keptFileUrls = formData.getAll('keptFileUrls') as string[];
+    const keptFileNames = formData.getAll('keptFileNames') as string[];
     const files = formData.getAll('files') as File[];
 
-    const { data: existing } = await (supabase.from('job_postings' as any) as any)
-      .select('file_urls, file_names')
-      .eq('id', id)
-      .single();
-
-    let fileUrls: string[] = existing?.file_urls || [];
-    let fileNames: string[] = existing?.file_names || [];
+    let fileUrls: string[] = [...keptFileUrls];
+    let fileNames: string[] = [...keptFileNames];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -160,15 +157,13 @@ export async function updateProjectAction(formData: FormData) {
     const role = formData.get('role') as string;
     const techStack = formData.get('techStack') as string;
     const description = formData.get('description') as string;
+
+    const keptFileUrls = formData.getAll('keptFileUrls') as string[];
+    const keptFileNames = formData.getAll('keptFileNames') as string[];
     const files = formData.getAll('files') as File[];
 
-    const { data: existing } = await (supabase.from('projects' as any) as any)
-      .select('file_urls, file_names')
-      .eq('id', id)
-      .single();
-
-    let fileUrls: string[] = existing?.file_urls || [];
-    let fileNames: string[] = existing?.file_names || [];
+    let fileUrls: string[] = [...keptFileUrls];
+    let fileNames: string[] = [...keptFileNames];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -221,7 +216,7 @@ export async function deleteJobPostingAction(id: string) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
-    return { success: false, message: err.message };
+    return { success: false, message: error.message };
   }
 }
 
@@ -233,6 +228,6 @@ export async function deleteProjectAction(id: string) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
-    return { success: false, message: err.message };
+    return { success: false, message: error.message };
   }
 }
