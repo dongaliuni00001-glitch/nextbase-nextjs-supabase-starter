@@ -1,3 +1,4 @@
+// apps/web/src/app/(app-pages)/dashboard/archive/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -7,9 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { deleteResumeAction } from '../editor/actions';
+import { JobPostingUploadForm } from './JobPostingUploadForm';
+import { JobPostingList } from './JobPostingList';
 
 export default function ArchivePage() {
   const [items, setItems] = useState<any[]>([]);
+  const [jobPostings, setJobPostings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -18,7 +22,7 @@ export default function ArchivePage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
   );
 
-  const fetchItems = async () => {
+  const fetchData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -27,22 +31,35 @@ export default function ArchivePage() {
       return;
     }
 
-    const { data, error } = await supabase
+    // 1. 자기소개서 분석 아카이브 목록 불러오기
+    const { data: itemsData, error: itemsError } = await supabase
       .from('private_items')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      setErrorMsg(error.message);
+    if (itemsError) {
+      setErrorMsg(itemsError.message);
     } else {
-      setItems(data || []);
+      setItems(itemsData || []);
     }
+
+    // 2. 채용 공고문 목록 불러오기
+    const { data: postingsData, error: postingsError } = await (supabase
+      .from('job_postings' as any) as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!postingsError) {
+      setJobPostings(postingsData || []);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchItems();
+    fetchData();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -54,7 +71,6 @@ export default function ArchivePage() {
       return;
     }
 
-    // 목록에서 즉시 제거
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -63,12 +79,13 @@ export default function ArchivePage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-12 p-4 sm:p-6 lg:p-8">
+      {/* 상단 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">보관함 및 이력</h1>
+          <h1 className="text-2xl font-bold tracking-tight">보관함 및 레퍼런스 관리</h1>
           <p className="text-sm text-muted-foreground">
-            작성 및 분석된 자소서와 버전별 히스토리를 관리합니다.
+            작성된 자소서 분석 히스토리와 채용 공고 레퍼런스를 통합 관리합니다.
           </p>
         </div>
         <Button asChild>
@@ -82,95 +99,78 @@ export default function ArchivePage() {
         </div>
       )}
 
-      {items.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-12 text-center">
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">저장된 자기소개서가 없습니다.</p>
-            <Button asChild variant="outline">
-              <Link href="/dashboard/editor">첫 자소서 작성하러 가기</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => {
-            let bodyData: any = {};
-            try {
-              bodyData = JSON.parse(item.body || '{}');
-            } catch {
-              bodyData = { content: item.body };
-            }
+      {/* 섹션 1: 채용 공고 및 멀티모달 업로드 */}
+      <div className="space-y-6 border-b pb-8">
+        <h2 className="text-xl font-bold tracking-tight">채용 공고 및 레퍼런스 등록</h2>
+        <JobPostingUploadForm />
+        <JobPostingList postings={jobPostings} />
+      </div>
 
-            return (
-              <Card key={item.id} className="flex flex-col justify-between">
-                <CardHeader className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary">
-                      {bodyData.company || '기업 미지정'}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(item.created_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <CardTitle className="text-base font-semibold line-clamp-1">
-                    {item.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground line-clamp-3">
-                    {bodyData.content || '내용이 없습니다.'}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex items-center justify-between border-t px-6 py-3 text-xs">
-                  <span className="text-muted-foreground">직무: {bodyData.jobRole || '미지정'}</span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="text-destructive hover:underline font-medium"
-                    >
-                      삭제
-                    </button>
-                    <Link
-                      href={`/dashboard/analysis/${item.id}`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      상세보기 &rarr;
-                    </Link>
-                  </div>
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+      {/* 섹션 2: 자기소개서 분석 아카이브 */}
+      <div className="space-y-6">
+        <h2 className="text-xl font-bold tracking-tight">자기소개서 분석 아카이브</h2>
+        {items.length === 0 ? (
+          <Card className="flex flex-col items-center justify-center p-12 text-center">
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">저장된 자기소개서가 없습니다.</p>
+              <Button asChild variant="outline">
+                <Link href="/dashboard/editor">첫 자소서 작성하러 가기</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => {
+              let bodyData: any = {};
+              try {
+                bodyData = JSON.parse(item.body || '{}');
+              } catch {
+                bodyData = { content: item.body };
+              }
 
-// apps/web/src/app/(app-pages)/dashboard/archive/page.tsx 예시
-import { createSupabaseClient } from '@/supabase-clients/server';
-import { JobPostingUploadForm } from './JobPostingUploadForm';
-import { JobPostingList } from './JobPostingList';
-
-export default async function ArchivePage() {
-  const supabase = await createSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  let jobPostings: any[] = [];
-  if (user) {
-    const { data } = await (supabase
-      .from('job_postings' as any) as any)
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    jobPostings = data || [];
-  }
-
-  return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-2xl font-bold tracking-tight text-center">채용 공고 및 레퍼런스 관리</h1>
-      <JobPostingUploadForm />
-      <JobPostingList postings={jobPostings} />
+              return (
+                <Card key={item.id} className="flex flex-col justify-between">
+                  <CardHeader className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary">
+                        {bodyData.company || '기업 미지정'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <CardTitle className="text-base font-semibold line-clamp-1">
+                      {item.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground line-clamp-3">
+                      {bodyData.content || '내용이 없습니다.'}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="flex items-center justify-between border-t px-6 py-3 text-xs">
+                    <span className="text-muted-foreground">직무: {bodyData.jobRole || '미지정'}</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive hover:underline font-medium"
+                      >
+                        삭제
+                      </button>
+                      <Link
+                        href={`/dashboard/analysis/${item.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        상세보기 &rarr;
+                      </Link>
+                    </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
