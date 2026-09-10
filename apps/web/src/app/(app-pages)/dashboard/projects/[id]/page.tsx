@@ -211,12 +211,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const uploadedNames: string[] = editJobKeptFiles.map(f => f.name);
 
       if (editJobNewFiles && editJobNewFiles.length > 0) {
-  for (let i = 0; i < editJobNewFiles.length; i++) {
-    const file = editJobNewFiles[i];
-    const cleanFileName = file.name.replace(/['\s]/g, '_').replace(/[^a-zA-Z0-9가-힣._-]/g, '');
-    const fileName = `${Date.now()}_${cleanFileName}`;
+        for (let i = 0; i < editJobNewFiles.length; i++) {
+          const file = editJobNewFiles[i];
           
-          // 'project-files' -> 'projects' 로 수정
+          // 💡 파일명에 한글/특수문자가 들어가서 발생하는 Invalid key 에러 원천 차단
+          const fileExt = file.name.split('.').pop() || 'bin';
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+
           const { error: uploadError } = await supabase.storage
             .from('projects')
             .upload(fileName, file);
@@ -227,11 +228,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           }
 
           const { data: { publicUrl } } = supabase.storage
-            .from('projects') // 'project-files' -> 'projects' 로 수정
+            .from('projects')
             .getPublicUrl(fileName);
             
           uploadedUrls.push(publicUrl);
-          uploadedNames.push(file.name);
+          uploadedNames.push(file.name); // 화면에는 원래 한글 파일명이 표시됨
         }
       }
 
