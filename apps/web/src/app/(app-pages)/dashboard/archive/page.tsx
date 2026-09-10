@@ -201,7 +201,7 @@ export default function ArchivePage() {
                         </Link>
                       </div>
                     </CardFooter>
-                  </CardCard>
+                  </Card>
                 );
               })}
             </div>
