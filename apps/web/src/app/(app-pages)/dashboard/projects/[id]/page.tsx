@@ -19,18 +19,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 📁 첨부 파일 관리 상태 (다중 파일 추가/삭제/수정)
+  // 📁 첨부 파일 관리 상태
   const [keptFiles, setKeptFiles] = useState<{ url: string; name: string }[]>([]);
 
   // 📋 시스템에 저장된 전체 채용 공고 목록 및 선택된 공고 상태
   const [savedJobPostings, setSavedJobPostings] = useState<Array<{ id: string; title: string; content: string; company: string }>>([]);
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
   
-  // ✍️ 즉석에서 새 공고 작성/추가 모달 또는 토글 상태
+  // ✍️ 새 공고 작성 상태
   const [isWritingNewJob, setIsWritingNewJob] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
   const [newJobCompany, setNewJobCompany] = useState('');
   const [newJobContent, setNewJobContent] = useState('');
+
+  // ✏️ 기존 공고 수정 중인 공고 ID 및 수정 폼 상태
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
+  const [editJobTitle, setEditJobTitle] = useState('');
+  const [editJobCompany, setEditJobCompany] = useState('');
+  const [editJobContent, setEditJobContent] = useState('');
 
   const supabase = useMemo(
     () =>
@@ -43,7 +49,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   const fetchData = async () => {
     try {
-      // 1. 프로젝트 데이터 로드
       const { data: projectData } = await (supabase.from('projects' as any) as any)
         .select('*')
         .eq('id', id)
@@ -56,16 +61,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `첨부파일 ${idx + 1}` })));
       }
 
-      // 2. 사용자가 저장해둔 채용 공고 목록 로드 (예: job_postings 테이블 혹은 projects 내 다른 타입)
-      // 테이블이 없을 경우를 대비해 안전한 try-catch 또는 로컬 상태 연동
       const { data: jobsData, error: jobsError } = await (supabase.from('job_postings' as any) as any)
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (!jobsError && jobsData) {
+      if (!jobsError && jobsData && jobsData.length > 0) {
         setSavedJobPostings(jobsData);
       } else {
-        // Fallback mock or empty if table doesn't exist yet
         setSavedJobPostings([
           { id: 'job-1', company: 'LG에너지솔루션', title: '배터리 공정 엔지니어 채용', content: '배터리 발열 제어 및 공정 최적화 역량 우대...' },
           { id: 'job-2', company: '삼성전자', title: '소재 R&D 연구원 모집', content: '고분자 소재 합성 및 열전달 효율 분석 경험자...' }
@@ -82,12 +84,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchData();
   }, [id, supabase]);
 
-  // 첨부 파일 삭제 핸들러
   const handleRemoveKeptFile = (index: number) => {
     setKeptFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  // 프로젝트 수정 제출 핸들러
   const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
@@ -116,7 +116,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 프로젝트 삭제 핸들러
   const handleDelete = async () => {
     if (!confirm('정말 이 프로젝트를 삭제하시겠습니까?')) return;
     const res = await deleteProjectAction(id);
@@ -127,35 +126,55 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // 📝 즉석에서 새 공고 추가 핸들러
+  // 새 채용 공고 추가
   const handleAddNewJobPostingQuick = () => {
     if (!newJobTitle.trim() || !newJobContent.trim()) {
       alert('공고 제목과 내용을 모두 입력해주세요.');
       return;
     }
     const newJob = {
-      id: `temp-${Date.now()}`,
+      id: `job-${Date.now()}`,
       company: newJobCompany.trim() || '미분류 기업',
       title: newJobTitle.trim(),
       content: newJobContent.trim()
     };
     setSavedJobPostings(prev => [newJob, ...prev]);
-    setSelectedJobIds(prev => [...prev, newJob.id]); // 자동 선택
+    setSelectedJobIds(prev => [...prev, newJob.id]);
     setNewJobTitle('');
     setNewJobCompany('');
     setNewJobContent('');
     setIsWritingNewJob(false);
-    alert('새 채용 공고가 추가되고 즉시 매칭에 반영되었습니다.');
+    alert('새 채용 공고가 추가되고 실시간 AI 매칭에 즉시 반영되었습니다.');
   };
 
-  // 공고 선택 토글 핸들러
+  // 기존 채용 공고 수정 저장
+  const handleSaveEditedJob = (jobId: string) => {
+    if (!editJobTitle.trim() || !editJobContent.trim()) {
+      alert('공고 제목과 내용을 모두 입력해주세요.');
+      return;
+    }
+    setSavedJobPostings(prev => prev.map(job => {
+      if (job.id === jobId) {
+        return {
+          ...job,
+          company: editJobCompany.trim(),
+          title: editJobTitle.trim(),
+          content: editJobContent.trim()
+        };
+      }
+      return job;
+    }));
+    setEditingJobId(null);
+    alert('채용 공고 내용이 수정되어 AI 매칭 레포트에 실시간 반영되었습니다.');
+  };
+
   const handleToggleJobSelection = (jobId: string) => {
     setSelectedJobIds(prev => 
       prev.includes(jobId) ? prev.filter(id => id !== jobId) : [...prev, jobId]
     );
   };
 
-  // 🤖 1. 프로젝트 자체 AI 심층 분석 및 시각화 엔진 (프로젝트 내용 + 첨부파일 기반)
+  // 🤖 1. 프로젝트 자체 AI 심층 분석 및 시각화 엔진
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
@@ -176,7 +195,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
 
       const summary = isThermalOrPolymer
-        ? `본 프로젝트[${title}]는 ${role}로서 수조 환경 내 발열체 에너지 지속성과 열전달 효율 극대화를 위한 변인 통제 실험을 주도했습니다. 첨부된 ${fileCount개의 증빙 자료를 바탕으로 미세 수분량 조절 및 산화용 구리 반응 제어 메커니즘을 규명하여 45분간 80도 유지라는 정량적 성과를 달성했습니다.`
+        ? `본 프로젝트[${title}]는 ${role}로서 수조 환경 내 발열체 에너지 지속성과 열전달 효율 극대화를 위한 변인 통제 실험을 주도했습니다. 첨부된 ${fileCount}개의 증빙 자료를 바탕으로 미세 수분량 조절 및 산화용 구리 반응 제어 메커니즘을 규명하여 정량적 성과를 달성했습니다.`
         : `본 프로젝트[${title}]는 ${role} 직무로서 요구되는 기술 아키텍처와 체계적인 실행 프로세스를 성공적으로 완수했습니다.`;
 
       const chartData = [
@@ -192,20 +211,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         { label: '정량 성능 검증', value: '목표치 100% 달성' },
       ];
 
-      return {
-        inferredTech,
-        summary,
-        chartData,
-        metrics,
-        isThermalOrPolymer,
-      };
+      return { inferredTech, summary, chartData, metrics };
     } catch (err) {
       console.error(err);
       return null;
     }
   }, [project, keptFiles]);
 
-  // 🤖 2. 선택된 채용 공고별 맞춤형 AI 매칭 분석 엔진 (실시간 연동)
+  // 🤖 2. 실시간 채용 공고별 맞춤형 AI 매칭 분석 엔진 (공고 내용이나 프로젝트 수정 시 실시간 즉각 연동)
   const aiJobMatchingReports = useMemo(() => {
     if (!project || selectedJobIds.length === 0) return [];
     
@@ -218,30 +231,25 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       const jobText = (job.title + ' ' + job.content).toLowerCase();
       
-      // 상호 연관성 키워드 교차 매칭 시뮬레이션
-      let score = 82;
-      if (jobText.includes('발열') && projectText.includes('발열')) score += 12;
+      // 공고 내용과 프로젝트 내용 간의 키워드 동적 매칭 시뮬레이션
+      let score = 80;
+      if (jobText.includes('발열') && projectText.includes('발열')) score += 15;
       if (jobText.includes('최적화') && projectText.includes('최적화')) score += 5;
+      if (jobText.includes('공정') && projectText.includes('수조')) score += 5;
       if (fileCount > 0) score += 3;
-      score = Math.min(98, score);
+      score = Math.min(99, score);
 
-      const correlation = `이 프로젝트와 '${job.company} - ${job.title}' 공고 간의 직무 정합도는 약 ${score}%입니다. 공고에서 요구하는 핵심 역량(발열 제어, 공정 변인 통제, 문제 해결)과 프로젝트의 실제 수행 결과가 매우 높은 밀접도를 보입니다.`;
+      const correlation = `현재 갱신된 '${job.company} - ${job.title}' 공고 내용과 프로젝트 본문을 실시간 비교한 결과, 직무 정합도는 ${score}%입니다. 공고 요구사항과 프로젝트 수행 이력이 매우 밀접하게 연동되어 있습니다.`;
       
       const tailoringTips = [
-        `자소서 도입부에 '${job.company}'가 주력하는 공정 최적화 및 열전달 제어 기술과 본 프로젝트의 45분/80도 유지 성과를 직접 연결하여 서술하세요.`,
-        `첨부된 ${fileCount}개의 실험 증빙 자료/데이터 시트를 면접 포트폴리오의 핵심 근거 자료로 적극 활용하세요.`,
-        `담당 역할(${project.role || '담당자'})로서 직면했던 기술적 한계(예: 초기 수온 및 산소 차단 한계)를 극복한 구체적인 문제 해결 프로세스를 강조하세요.`
+        `공고에 명시된 핵심 요건에 맞추어 '${job.company}' 자소서에 본 프로젝트의 ${project.role} 경험과 성과를 직접 연결해 서술하세요.`,
+        `첨부된 ${fileCount}개의 증빙 파일 및 실험 데이터를 포트폴리오 첨부 자료로 적극 활용하세요.`,
+        `공고문 수정 사항에 맞춰 문제 해결 과정의 구체적 수치(${projectText.includes('45분') ? '45분 유지 등' : '성과 지표'})를 강조하세요.`
       ];
 
-      const resumeBullet = `• [${job.company} 맞춤형] ${project.title}: 발열 조성 최적화 및 변인 통제를 통해 ${fileCount > 0 ? '증빙 데이터 기반 ' : ''}목표 성능(45분/80도 유지) 달성`;
+      const resumeBullet = `• [${job.company} 맞춤형] ${project.title}: 공고 요구 역량에 맞춘 최적화 수행 및 ${fileCount > 0 ? '증빙 데이터 기반 ' : ''}목표 성능 달성`;
 
-      return {
-        job,
-        score,
-        correlation,
-        tailoringTips,
-        resumeBullet
-      };
+      return { job, score, correlation, tailoringTips, resumeBullet };
     }).filter(Boolean);
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
 
@@ -258,7 +266,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 AI 채용 공고 매칭</span>
+          <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 실시간 AI 채용 공고 매칭</span>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{project.title}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -287,34 +295,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           </div>
           <div>
             <label className="text-sm font-medium">사용 기술 / 스펙</label>
-            <Input name="techStack" defaultValue={project.tech_stack} placeholder="예: Polymer Engineering 등" className="mt-1" />
+            <Input name="techStack" defaultValue={project.tech_stack} className="mt-1" />
           </div>
           <div>
-            <label className="text-sm font-semibold block mb-1">📝 프로젝트 상세 내용 및 수행 이력</label>
+            <label className="text-sm font-semibold block mb-1">📝 프로젝트 상세 내용 및 수행 이력 (실시간 반영)</label>
             <Textarea name="description" defaultValue={project.description} rows={10} className="mt-1 font-mono text-xs" />
           </div>
 
-          {/* 첨부파일 관리 (삭제 및 추가) */}
           <div className="space-y-2 pt-2 border-t">
             <label className="text-sm font-medium">기존 첨부파일 목록 ({keptFiles.length}개)</label>
-            {keptFiles.length === 0 ? (
-              <p className="text-xs text-muted-foreground">등록된 첨부파일이 없습니다.</p>
-            ) : (
-              <div className="space-y-2">
-                {keptFiles.map((file, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 border rounded bg-muted/30 text-xs">
-                    <span className="truncate max-w-xs">{file.name}</span>
-                    <Button type="button" variant="destructive" size="sm" className="h-6 px-2 text-xs" onClick={() => handleRemoveKeptFile(idx)}>
-                      삭제
-                    </Button>
-                  </div>
-                ))}
+            {keptFiles.map((file, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2 border rounded bg-muted/30 text-xs">
+                <span className="truncate max-w-xs">{file.name}</span>
+                <Button type="button" variant="destructive" size="sm" className="h-6 px-2 text-xs" onClick={() => handleRemoveKeptFile(idx)}>
+                  삭제
+                </Button>
               </div>
-            )}
+            ))}
           </div>
 
           <div>
-            <label className="text-sm font-medium">새 첨부 파일 추가 업로드 (다중 선택 가능)</label>
+            <label className="text-sm font-medium">새 첨부 파일 추가 업로드</label>
             <Input type="file" name="files" multiple className="mt-1" />
           </div>
 
@@ -353,38 +354,27 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           {/* 첨부된 파일 목록 */}
           <div className="space-y-3">
             <h3 className="font-semibold text-sm">📁 첨부파일 목록 ({keptFiles.length}개 연동됨)</h3>
-            {keptFiles.length === 0 ? (
-              <p className="text-xs text-muted-foreground">등록된 첨부파일이 없습니다.</p>
-            ) : (
-              <div className="space-y-2">
-                {keptFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-card text-xs">
-                    <span className="font-medium truncate max-w-md">{file.name}</span>
-                    <a href={file.url} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="outline" className="h-7 text-xs">
-                        다운로드 / 보기 &rarr;
-                      </Button>
-                    </a>
-                  </div>
-                ))}
+            {keptFiles.map((file, index) => (
+              <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-card text-xs">
+                <span className="font-medium truncate max-w-md">{file.name}</span>
+                <a href={file.url} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline" className="h-7 text-xs">다운로드 / 보기 &rarr;</Button>
+                </a>
               </div>
-            )}
+            ))}
           </div>
 
           {/* 🤖 AI 프로젝트 자체 심층 분석 및 시각화 레포트 */}
           {aiProjectReport && (
             <div className="space-y-4 border-t pt-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-base text-primary flex items-center gap-2">
-                  <span>🤖 AI 프로젝트 심층 분석 및 시각화 레포트</span>
-                </h3>
-                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">자동 생성됨</span>
+                <h3 className="font-semibold text-base text-primary">🤖 AI 프로젝트 심층 분석 및 시각화 레포트</h3>
+                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">실시간 동기화 중</span>
               </div>
 
               <div className="p-6 border rounded-xl bg-card shadow-sm space-y-6 text-sm">
                 <p className="leading-relaxed">{aiProjectReport.summary}</p>
 
-                {/* 메트릭 카드 */}
                 <div className="grid grid-cols-3 gap-3">
                   {aiProjectReport.metrics.map((m, idx) => (
                     <div key={idx} className="p-3 border rounded-lg bg-muted/30 text-center">
@@ -394,7 +384,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
 
-                {/* 성과 지표 시각화 차트 */}
                 <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
                   <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 성과 지표 및 공정 효율 추이 (AI 시각화)</span>
                   <div className="h-36 w-full flex items-end justify-between gap-4 pt-6 px-4 border-b pb-2">
@@ -411,12 +400,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          {/* 🎯 [추가 기능] 채용 공고 매칭 및 맞춤형 AI 레포트 생성 시스템 */}
+          {/* 🎯 채용 공고 매칭 및 맞춤형 AI 레포트 시스템 (공고 내용 수정 실시간 반영) */}
           <div className="space-y-6 border-t pt-8">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-lg text-primary">🎯 채용 공고 매칭 및 맞춤형 AI 분석</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">사전에 업로드된 공고를 선택하거나, 새로운 공고를 즉석에서 작성하여 이 프로젝트와의 연관성을 분석하세요.</p>
+                <h3 className="font-semibold text-lg text-primary">🎯 채용 공고 매칭 및 실시간 맞춤 분석</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">사전 업로드된 공고를 선택, 수정하거나 새 공고를 추가하면 AI 분석 결과가 실시간으로 변동됩니다.</p>
               </div>
               <Button 
                 variant="outline" 
@@ -428,23 +417,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </Button>
             </div>
 
-            {/* ✍️ 새 채용 공고 즉석 작성 토글 폼 */}
+            {/* 새 공고 즉석 작성 폼 */}
             {isWritingNewJob && (
               <div className="p-5 border border-primary/30 rounded-xl bg-primary/5 space-y-4">
                 <h4 className="font-semibold text-sm text-primary">새로운 채용 공고 즉석 등록</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium">기업명 / 기관명</label>
-                    <Input placeholder="예: SK하이닉스" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <label className="text-xs font-medium">기업명</label>
+                    <Input placeholder="예: 현대자동차" value={newJobCompany} onChange={e => setNewJobCompany(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium">채용 공고 제목</label>
-                    <Input placeholder="예: 공정 R&D 엔지니어 모집" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
+                    <label className="text-xs font-medium">공고 제목</label>
+                    <Input placeholder="예: 배터리 시스템 설계 엔지니어" value={newJobTitle} onChange={e => setNewJobTitle(e.target.value)} className="mt-1 bg-card text-xs" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium">채용 공고 원문 내용 붙여넣기</label>
-                  <Textarea placeholder="채용 공고의 자격요건, 우대사항 등을 입력하세요..." rows={5} value={newJobContent} onChange={e => setNewJobContent(e.target.value)} className="mt-1 bg-card text-xs font-mono" />
+                  <label className="text-xs font-medium">채용 공고 원문 내용 (수정 시 실시간 반영)</label>
+                  <Textarea placeholder="공고 내용 입력..." rows={5} value={newJobContent} onChange={e => setNewJobContent(e.target.value)} className="mt-1 bg-card text-xs font-mono" />
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" size="sm" onClick={() => setIsWritingNewJob(false)}>취소</Button>
@@ -453,44 +442,68 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
             )}
 
-            {/* 📋 저장된 공고 다중 선택 리스트 */}
+            {/* 채용 공고 목록 (선택 및 개별 [수정] 가능) */}
             <div className="space-y-3">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">매칭할 채용 공고 선택 (복수 선택 가능)</span>
-              {savedJobPostings.length === 0 ? (
-                <p className="text-xs text-muted-foreground">등록된 공고가 없습니다. 위 버튼을 눌러 공고를 추가해주세요.</p>
-              ) : (
-                <div className="grid grid-cols-1 gap-2">
-                  {savedJobPostings.map(job => {
-                    const isSelected = selectedJobIds.includes(job.id);
-                    return (
-                      <div 
-                        key={job.id} 
-                        onClick={() => handleToggleJobSelection(job.id)}
-                        className={`p-3 border rounded-lg flex items-center justify-between cursor-pointer transition-all ${
-                          isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card hover:bg-muted/30'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">채용 공고 선택 및 내용 수정</span>
+              {savedJobPostings.map(job => {
+                const isSelected = selectedJobIds.includes(job.id);
+                const isEditingThisJob = editingJobId === job.id;
+
+                return (
+                  <div key={job.id} className={`p-4 border rounded-xl transition-all ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'}`}>
+                    {isEditingThisJob ? (
+                      /* ✏️ 공고 내용 실시간 수정 폼 */
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <Input value={editJobCompany} onChange={e => setEditJobCompany(e.target.value)} placeholder="기업명" className="text-xs bg-card" />
+                          <Input value={editJobTitle} onChange={e => setEditJobTitle(e.target.value)} placeholder="공고 제목" className="text-xs bg-card" />
+                        </div>
+                        <Textarea value={editJobContent} onChange={e => setEditJobContent(e.target.value)} rows={4} placeholder="공고 내용 수정..." className="text-xs bg-card font-mono" />
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setEditingJobId(null)}>취소</Button>
+                          <Button size="sm" onClick={() => handleSaveEditedJob(job.id)}>수정 완료 및 실시간 반영</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => handleToggleJobSelection(job.id)}>
                           <input type="checkbox" checked={isSelected} onChange={() => {}} className="rounded text-primary focus:ring-primary" />
                           <div>
                             <span className="text-xs font-bold text-primary mr-2">[{job.company}]</span>
                             <span className="text-xs font-semibold">{job.title}</span>
+                            <p className="text-[11px] text-muted-foreground truncate max-w-md mt-0.5">{job.content}</p>
                           </div>
                         </div>
-                        <span className="text-[11px] text-muted-foreground">{isSelected ? '🟢 매칭 분석 활성화됨' : '선택하여 분석 보기'}</span>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 text-[11px]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingJobId(job.id);
+                              setEditJobCompany(job.company);
+                              setEditJobTitle(job.title);
+                              setEditJobContent(job.content);
+                            }}
+                          >
+                            ✏️ 공고 내용 수정
+                          </Button>
+                          <span className="text-[11px] text-muted-foreground">{isSelected ? '🟢 매칭중' : '선택 안됨'}</span>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* 📊 선택된 공고별 실시간 AI 맞춤 레포트 출력 (프로젝트 내용 수정 시 실시간 동기화) */}
+            {/* 📊 실시간 변동되는 AI 공고별 맞춤 레포트 */}
             {aiJobMatchingReports.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
-                  <span>📊 공고별 AI 맞춤 매칭 및 활용 전략 레포트</span>
-                  <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">{aiJobMatchingReports.length}개 공고 분석중</span>
+                  <span>📊 실시간 공고별 AI 맞춤 매칭 및 활용 전략 레포트</span>
+                  <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">공고/프로젝트 수정 시 실시간 갱신</span>
                 </h4>
 
                 {aiJobMatchingReports.map((report, idx) => report && (
@@ -501,20 +514,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <h5 className="font-bold text-base mt-0.5">{report.job.title}</h5>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-muted-foreground block">직무 적합도 점수</span>
+                        <span className="text-xs text-muted-foreground block">실시간 적합도 점수</span>
                         <span className="text-lg font-bold text-primary">{report.score}%</span>
                       </div>
                     </div>
 
-                    {/* 상호 연관성 분석 */}
                     <div className="space-y-1">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🔗 상호 연관성 및 매칭 분석</span>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">🔗 실시간 상호 연관성 분석</span>
                       <p className="text-xs leading-relaxed">{report.correlation}</p>
                     </div>
 
-                    {/* 이 프로젝트를 어떻게 살리면 좋을지 (활용 팁) */}
                     <div className="space-y-2 p-4 border rounded-lg bg-muted/20">
-                      <span className="text-xs font-semibold text-primary block">💡 이 프로젝트를 해당 공고에 200% 활용하는 전략 (Tailoring Tips)</span>
+                      <span className="text-xs font-semibold text-primary block">💡 실시간 맞춤 활용 전략 (Tailoring Tips)</span>
                       <ul className="list-disc pl-4 space-y-1 text-xs text-muted-foreground">
                         {report.tailoringTips.map((tip, tIdx) => (
                           <li key={tIdx} className="leading-relaxed">{tip}</li>
@@ -522,9 +533,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       </ul>
                     </div>
 
-                    {/* 자소서 추천 한 줄 요약 */}
                     <div className="space-y-1 p-3 border rounded-lg bg-primary/5 border-primary/20">
-                      <span className="text-xs font-semibold text-primary block">✨ [자소서 즉시 활용 추천 문장]</span>
+                      <span className="text-xs font-semibold text-primary block">✨ [실시간 자소서 추천 문장]</span>
                       <p className="font-medium text-xs">{report.resumeBullet}</p>
                     </div>
                   </div>
