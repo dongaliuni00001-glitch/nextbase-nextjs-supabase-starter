@@ -52,9 +52,6 @@ export function AppSidebarContent({ user, isAdmin }: { user: User; isAdmin: bool
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
-  // 관리자 여부 확인 (Supabase user_metadata나 앱 설정에 맞춰 수정 가능)
-  const isAdmin = user.user_metadata?.role === 'admin';
-
   function handleSignOut() {
     startTransition(async () => {
       await signOutAction();
