@@ -303,6 +303,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         const data = await response.json();
         setAiProjectReport(data);
+        // 💡 기존 하단 UI와의 호환성을 위한 매핑 변수 선언
+  const aiJobMatchingReports = jobReports;
         setJobReports(data.jobReports || []);
       } catch (err) {
         console.error('AI 분석 에러:', err);
