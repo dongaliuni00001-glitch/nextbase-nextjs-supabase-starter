@@ -314,7 +314,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchAIAnalysis();
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
 
- if (loading) {
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  // ... 모든 hooks 및 useEffect 로직들 ...
+
+  const aiJobMatchingReports = jobReports || [];
+
+  // 💡 얼리 리턴문은 JSX 태그 바깥쪽, 컴포넌트 본문 최상단에 있어야 합니다.
+  if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
   }
 
@@ -322,6 +328,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
   }
 
+  // 💡 최종 UI 렌더링 리턴문
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
       {/* 🤖 분석 중 로딩 UI */}
@@ -331,6 +338,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
+      {/* 상단 헤더 및 나머지 JSX 코드들 */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div>
+          <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 AI 실시간 채용 공고 매칭</span>
+          <h1 className="text-2xl font-bold tracking-tight mt-1">{project.title}</h1>
+        </div>
+      </div>
+    
       {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
@@ -723,21 +738,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* 📊 AI 맞춤 매칭 및 활용 전략 레포트 */}
-            // 💡 JSX 렌더링 부근에서 사용하는 aiJobMatchingReports 변수 선언
-  const aiJobMatchingReports = jobReports || [];
-
-  if (loading) {
-    return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
-  }
-
-  if (!project) {
-    return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
-  }
-
-  return (
-    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
-      {/* ... 이하 기존 JSX 및 aiJobMatchingReports 활용부 ... */}
-            {aiJobMatchingReports.length > 0 && (
+                     {aiJobMatchingReports.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
                   <span>📊 AI가 직접 컨펌한 공고별 맞춤 매칭 및 활용 전략 레포트</span>
