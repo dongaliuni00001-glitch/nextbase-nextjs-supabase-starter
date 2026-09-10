@@ -277,7 +277,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
-  c// 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
+  
   // 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
