@@ -146,3 +146,31 @@ export default function ArchivePage() {
     </div>
   );
 }
+
+// apps/web/src/app/(app-pages)/dashboard/archive/page.tsx 예시
+import { createSupabaseClient } from '@/supabase-clients/server';
+import { JobPostingUploadForm } from './JobPostingUploadForm';
+import { JobPostingList } from './JobPostingList';
+
+export default async function ArchivePage() {
+  const supabase = await createSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let jobPostings: any[] = [];
+  if (user) {
+    const { data } = await (supabase
+      .from('job_postings' as any) as any)
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    jobPostings = data || [];
+  }
+
+  return (
+    <div className="p-8 space-y-8">
+      <h1 className="text-2xl font-bold tracking-tight text-center">채용 공고 및 레퍼런스 관리</h1>
+      <JobPostingUploadForm />
+      <JobPostingList postings={jobPostings} />
+    </div>
+  );
+}

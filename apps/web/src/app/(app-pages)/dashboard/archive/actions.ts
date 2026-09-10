@@ -20,7 +20,8 @@ export async function uploadAndParseJobPosting(formData: FormData) {
   // 1. Supabase Storage에 파일 업로드
   const fileExt = file.name.split('.').pop();
   const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  
+  const { error: uploadError } = await supabase.storage
     .from('job-postings') // 'job-postings' 버킷 생성 필요
     .upload(fileName, file);
 
@@ -33,20 +34,16 @@ export async function uploadAndParseJobPosting(formData: FormData) {
     .getPublicUrl(fileName);
 
   // 2. 텍스트 추출 시뮬레이션 및 실제 연동 파트 
-  // (PDF, 이미지, 문서 형식에 따라 OCR 또는 LLM Vision API를 연동하여 텍스트를 추출합니다)
   let extractedText = '';
   
   if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-    // TODO: 여기에 OpenAI Vision API 또는 수동/서버 OCR 파싱 로직을 연결할 수 있습니다.
-    // 현재는 업로드된 파일 기반 메타 주입 및 기본 텍스트 추출 형태를 구성합니다.
     extractedText = `[자동 추출된 공고문 내용]\n파일 명: ${file.name}\n- 지원 직무 및 요건 분석 대기 중...`;
   } else {
-    // 텍스트 기반 파일인 경우 직접 읽기 처리 가능
     extractedText = await file.text().catch(() => '텍스트 추출 불가 파일');
   }
 
-  // 3. DB에 공고문 및 추출 내용 저장
-  const { error: dbError } = await supabase.from('job_postings').insert({
+  // 3. DB에 공고문 및 추출 내용 저장 (as any 타입 캐스팅 적용)
+  const { error: dbError } = await (supabase.from('job_postings' as any) as any).insert({
     user_id: user.id,
     company_name: companyName,
     job_title: jobTitle,
