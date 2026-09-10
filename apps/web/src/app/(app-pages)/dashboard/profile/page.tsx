@@ -1,11 +1,11 @@
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
-import { unstable_noStore as noStore } from 'next/cache';
+import { connection } from 'next/server'; // 1. 임포트 추가
 import { updateProfile } from './actions';
 import { ProfileForm } from './ProfileForm';
 
 export default async function ProfilePage() {
-  noStore();
+  await connection(); // 2. 함수 내부 최상단에 호출 추가
 
   try {
     const supabase = await createSupabaseClient();
@@ -44,7 +44,6 @@ export default async function ProfilePage() {
       </div>
     );
   } catch (err: any) {
-    // Next.js redirect 예외는 정상 작동하도록 재전송
     if (err?.digest?.includes('NEXT_REDIRECT')) {
       throw err;
     }
