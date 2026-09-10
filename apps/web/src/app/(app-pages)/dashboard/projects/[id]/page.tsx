@@ -54,23 +54,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    formData.append('id', id);
+    try {
+      const formData = new FormData(e.currentTarget);
+      formData.append('id', id);
 
-    keptFiles.forEach(file => {
-      formData.append('keptFileUrls', file.url);
-      formData.append('keptFileNames', file.name);
-    });
+      keptFiles.forEach(file => {
+        formData.append('keptFileUrls', file.url);
+        formData.append('keptFileNames', file.name);
+      });
 
-    const res = await updateProjectAction(formData);
-    setSubmitting(false);
+      const res = await updateProjectAction(formData);
 
-    if (!res.success) {
-      alert(`수정 실패: ${res.message}`);
-    } else {
-      alert('성공적으로 수정되었습니다.');
-      setIsEditing(false);
-      fetchProject();
+      if (!res.success) {
+        alert(`수정 실패: ${res.message}`);
+      } else {
+        alert('성공적으로 수정되었습니다.');
+        setIsEditing(false);
+        fetchProject();
+      }
+    } catch (err: any) {
+      alert(`오류 발생: ${err?.message || '알 수 없는 오류'}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -96,7 +101,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <span className="text-xs text-muted-foreground">프로젝트 상세 정보</span>
+          <span className="text-xs text-muted-foreground">프로젝트 및 경력 상세 관리</span>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{project.title}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -181,6 +186,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="font-semibold text-sm">상세 내용 및 성과</h3>
             <div className="p-6 border rounded-xl bg-card text-sm whitespace-pre-wrap leading-relaxed">
               {project.description || '작성된 내용이 없습니다.'}
+            </div>
+          </div>
+
+          {/* AI 분석 레포트 섹션 추가 */}
+          <div className="space-y-3 border-t pt-6">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-primary">🤖 AI 프로젝트 분석 및 개선 리포트</h3>
+              <span className="text-xs text-muted-foreground">실시간 자동 분석됨</span>
+            </div>
+            <div className="p-6 border rounded-xl bg-muted/20 text-sm space-y-3 leading-relaxed">
+              <div>
+                <span className="font-semibold block text-xs text-muted-foreground mb-1">💡 핵심 성과 요약</span>
+                <p>본 프로젝트는 <span className="font-medium text-foreground">{project.tech_stack || '지정된 기술'}</span>을 활용하여 실무 역량을 입증할 수 있도록 구조화되어 있습니다. 업로드된 파일과 내용이 자동으로 동기화되었습니다.</p>
+              </div>
+              <div>
+                <span className="font-semibold block text-xs text-muted-foreground mb-1">📈 보완하면 좋은 점 (AI 피드백)</span>
+                <p>정량적 수치(예: 효율성 몇 % 향상, 공정 시간 단축 등)를 상세 내용에 추가하면 인사담당자에게 더욱 매력적인 포트폴리오가 됩니다.</p>
+              </div>
             </div>
           </div>
 

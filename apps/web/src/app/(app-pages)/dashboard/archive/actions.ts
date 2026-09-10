@@ -33,7 +33,7 @@ export async function uploadAndParseJobPosting(formData: FormData) {
           .upload(fileNamePath, file);
 
         if (uploadError) {
-          return { success: false, message: `파일 업로드 실패 (${file.name}): ${uploadError.message}` };
+          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
         }
 
         const { data: urlData } = supabase.storage
@@ -114,7 +114,7 @@ export async function updateJobPostingAction(formData: FormData) {
           .upload(fileNamePath, file);
 
         if (uploadError) {
-          return { success: false, message: `파일 업로드 실패 (${file.name}): ${uploadError.message}` };
+          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
         }
 
         const { data: urlData } = supabase.storage
@@ -177,7 +177,7 @@ export async function updateProjectAction(formData: FormData) {
           .upload(fileNamePath, file);
 
         if (uploadError) {
-          return { success: false, message: `파일 업로드 실패 (${file.name}): ${uploadError.message}` };
+          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
         }
 
         const { data: urlData } = supabase.storage
