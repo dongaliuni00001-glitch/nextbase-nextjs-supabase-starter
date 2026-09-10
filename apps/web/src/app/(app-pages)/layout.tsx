@@ -14,6 +14,8 @@ import { AppSidebar } from './app-sidebar';
 
 import { createSupabaseClient } from '@/supabase-clients/server';
 
+export const dynamic = 'force-dynamic';
+
 async function AuthGuard({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
