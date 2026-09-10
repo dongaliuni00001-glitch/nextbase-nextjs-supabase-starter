@@ -278,6 +278,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
   c// 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
+  // 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
@@ -356,14 +357,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         { label: 'AI 심층 등급', value: fileCount > 0 ? 'S등급 (최우수 실무 역량)' : 'A+등급 (우수)' },
       ];
 
-      // 💡 desc 속성을 추가하여 타입 에러 해결
       return { domainLabel, summary: desc, desc, expertCritique, starPortfolio, interviewQAs, chartData, metrics, tech: inferredTech, role: inferredRole };
     } catch (err) {
       console.error(err);
       return null;
     }
   }, [project, keptFiles]);
-  
+
   // 🤖 🤖 [AI가 직접 컨펌하고 동적으로 생성하는 맞춤형 분석 및 활용 전략 레포트]
   const aiJobMatchingReports = useMemo(() => {
     if (!project || selectedJobIds.length === 0) return [];
