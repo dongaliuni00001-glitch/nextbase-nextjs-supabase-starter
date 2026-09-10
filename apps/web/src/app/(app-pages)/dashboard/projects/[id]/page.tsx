@@ -277,13 +277,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   };
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
-
-// 🤖 OpenAI API 연동 및 상태 정의
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  // 1. 상태 정의
   const [aiProjectReport, setAiProjectReport] = useState<any>(null);
   const [jobReports, setJobReports] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  const aiJobMatchingReports = jobReports || [];
 
-  // 🤖 백엔드 API 라우트(/api/ai-analyze-project) 호출
+  // 2. OpenAI API 연동 백엔드 호출
   useEffect(() => {
     async function fetchAIAnalysis() {
       if (!project) return;
@@ -312,21 +314,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
 
     fetchAIAnalysis();
-// 1. 이전 useEffect나 함수가 끝나는 지점
-        fetchAIAnalysis();
-      }, [project, keptFiles, selectedJobIds, savedJobPostings]);
-    } // 👈 누락되기 쉬운 닫는 중괄호가 있는지 확인하세요.
+  }, [project, keptFiles, selectedJobIds, savedJobPostings]);
 
-    // 2. 컴포넌트 선언은 반드시 파일의 최상위 레벨에서 시작해야 합니다.
-    export default function ProjectDetailPage({ params }: { params: { id: string } }) {
-      const [aiJobMatchingReports, setAiJobMatchingReports] = useState<any>([]);
-      
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
-  // ... 모든 hooks 및 useEffect 로직들 ...
-
-  const aiJobMatchingReports = jobReports || [];
-
-  // 💡 얼리 리턴문은 JSX 태그 바깥쪽, 컴포넌트 본문 최상단에 있어야 합니다.
+  // 3. 얼리 리턴 (로딩 및 에러 처리)
   if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
   }
@@ -335,7 +325,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
   }
 
-  // 💡 최종 UI 렌더링 리턴문
+  // 4. 최종 UI 렌더링
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
       {/* 🤖 분석 중 로딩 UI */}
@@ -345,7 +335,7 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      {/* 상단 헤더 및 나머지 JSX 코드들 */}
+      {/* 상단 헤더 */}
       <div className="flex items-center justify-between border-b pb-4">
         <div>
           <span className="text-xs text-muted-foreground">프로젝트 상세 관리 및 AI 실시간 채용 공고 매칭</span>
