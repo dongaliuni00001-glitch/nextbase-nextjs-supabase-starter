@@ -1,5 +1,7 @@
+// apps/web/src/app/(app-pages)/layout.tsx
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import { connection } from 'next/server';
 
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 import { ModeToggle } from '@/components/ui/mode-toggle';
@@ -9,14 +11,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { getCachedIsUserLoggedIn } from '@/rsc-data/supabase';
 import { AppSidebar } from './app-sidebar';
 
 import { createSupabaseClient } from '@/supabase-clients/server';
 
-export const dynamic = 'force-dynamic';
-
 async function AuthGuard({ children }: { children: ReactNode }) {
+  await connection();
+
   const supabase = await createSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -24,14 +25,12 @@ async function AuthGuard({ children }: { children: ReactNode }) {
     redirect('/login');
   }
 
-  // profiles 테이블에서 유저의 status 확인 (타입 에러 우회)
   const { data: profile } = await (supabase
     .from('profiles' as any)
     .select('status')
     .eq('id', user.id)
     .single() as any);
 
-  // status가 pending인 경우 승인 대기 페이지로 리다이렉트
   if (profile?.status === 'pending') {
     redirect('/pending-approval');
   }
