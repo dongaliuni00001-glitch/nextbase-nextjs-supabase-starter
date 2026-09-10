@@ -278,12 +278,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
 
-  // 🤖 AI 분석 결과 상태 정의
+// 🤖 OpenAI API 연동 및 상태 정의
   const [aiProjectReport, setAiProjectReport] = useState<any>(null);
   const [jobReports, setJobReports] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // 🤖 백엔드 API 라우트 호출
+  // 🤖 백엔드 API 라우트(/api/ai-analyze-project) 호출
   useEffect(() => {
     async function fetchAIAnalysis() {
       if (!project) return;
@@ -313,6 +313,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
     fetchAIAnalysis();
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
+
+  if (loading) {
+    return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
+  }
+
+  if (!project) {
+    return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
+  }
   
   // 분석 중 로딩 UI 예시 (필요시 배치)
   {isAnalyzing && (
@@ -320,14 +328,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       🤖 OpenAI 수석 컨설턴트 AI가 프로젝트 내용과 첨부파일을 심층 분석하여 STAR 포트폴리오를 작성하고 있습니다...
     </div>
   )}
-
-    const aiResult = JSON.parse(completion.choices[0].message.content || '{}');
-    return NextResponse.json(aiResult);
-  } catch (error: any) {
-    console.error('OpenAI API 연동 오류:', error);
-    return NextResponse.json({ error: error.message || 'AI 분석 중 오류가 발생했습니다.' }, { status: 500 });
-  }
-}
 
       const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
 
