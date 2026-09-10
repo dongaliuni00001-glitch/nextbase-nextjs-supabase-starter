@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { createSupabaseClient } from '@/supabase-clients/server';
 import { createClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
-import { approveUser } from './actions'; // 필요시 서버 액션 경로 조정
+import { approveUser } from './actions';
 
 async function AdminUsersContent() {
   const supabase = await createSupabaseClient();
@@ -32,7 +32,7 @@ async function AdminUsersContent() {
 
   const { data: pendingProfiles, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id, status')
+    .select('id, status, full_name, gender, major, created_at')
     .eq('status', 'pending');
 
   if (profileError) {
@@ -45,6 +45,10 @@ async function AdminUsersContent() {
       return {
         id: p.id,
         email: authUser.user?.email || '이메일 없음',
+        fullName: p.full_name || '이름 없음',
+        gender: p.gender || '미입력',
+        major: p.major || '미입력',
+        createdAt: p.created_at ? new Date(p.created_at).toLocaleString('ko-KR') : '시간 정보 없음',
       };
     })
   );
@@ -58,8 +62,16 @@ async function AdminUsersContent() {
         <div className="border rounded-lg divide-y bg-card">
           {pendingUsers.map((u) => (
             <div key={u.id} className="p-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium text-sm">이메일: {u.email}</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-base">{u.fullName}</span>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                    {u.gender}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">이메일: {u.email}</p>
+                <p className="text-sm text-muted-foreground">학과/소속: {u.major}</p>
+                <p className="text-xs text-muted-foreground">신청 일시: {u.createdAt}</p>
               </div>
               <form action={approveUser}>
                 <input type="hidden" name="userId" value={u.id} />
