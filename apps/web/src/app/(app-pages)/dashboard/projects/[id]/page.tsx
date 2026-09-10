@@ -276,16 +276,15 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   };
 
-  // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
-}
-  // 1. 상태 정의
-  const [aiProjectReport, setAiProjectReport] = useState<any>(null);
-  const [jobReports, setJobReports] = useState<any[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // 💡 컴포넌트 선언은 파일 최상단 또는 독립된 위치에서 단 한 번만 시작되어야 합니다.
+  export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+    // 1. 상태 정의 (반드시 컴포넌트 함수 중괄호 { 바로 안쪽에 있어야 합니다)
+    const [aiProjectReport, setAiProjectReport] = useState<any>(null);
+    const [jobReports, setJobReports] = useState<any[]>([]);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    
+    const aiJobMatchingReports = jobReports || [];
   
-  const aiJobMatchingReports = jobReports || [];
-
   // 2. OpenAI API 연동 백엔드 호출
   useEffect(() => {
     async function fetchAIAnalysis() {
