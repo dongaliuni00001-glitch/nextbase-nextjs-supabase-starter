@@ -21,9 +21,9 @@ export function JobPostingUploadForm() {
     try {
       const res = await uploadAndParseJobPosting(formData);
       if (res?.success) {
-        setSuccessMsg('채용 공고가 성공적으로 등록되었습니다!');
+        setSuccessMsg('채용 공고와 파일들이 성공적으로 등록되었습니다!');
         (e.target as HTMLFormElement).reset();
-        window.location.reload(); // 목록 새로고침
+        window.location.reload();
       } else {
         setErrorMsg(res?.message || '업로드 중 오류가 발생했습니다.');
       }
@@ -48,13 +48,13 @@ export function JobPostingUploadForm() {
         </div>
       </div>
       <div>
-        <label className="text-sm font-medium">공고문 파일 (이미지, PDF, 문서 등)</label>
-        <Input type="file" name="file" required className="mt-1" />
+        <label className="text-sm font-medium">채용 공고문 및 관련 자료 (다중 선택 가능)</label>
+        <Input type="file" name="files" multiple className="mt-1" />
       </div>
       {errorMsg && <div className="p-3 text-xs text-destructive bg-destructive/10 rounded-md">{errorMsg}</div>}
       {successMsg && <div className="p-3 text-xs text-green-600 bg-green-500/10 rounded-md">{successMsg}</div>}
       <Button type="submit" disabled={loading} className="w-full">
-        {loading ? '업로드 및 텍스트 추출 중...' : '공고문 업로드 및 분석'}
+        {loading ? '업로드 및 다중 파일 분석 중...' : '공고문 및 파일 일괄 업로드'}
       </Button>
     </form>
   );

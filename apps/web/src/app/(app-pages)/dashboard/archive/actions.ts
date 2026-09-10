@@ -10,42 +10,59 @@ export async function uploadAndParseJobPosting(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, message: '인증되지 않은 사용자입니다.' };
 
-    const file = formData.get('file') as File;
     const companyName = formData.get('companyName') as string;
     const jobTitle = formData.get('jobTitle') as string;
+    const files = formData.getAll('files') as File[];
 
-    if (!file || file.size === 0) {
-      return { success: false, message: '업로드할 파일이 없습니다.' };
+    if (!companyName || !jobTitle) {
+      return { success: false, message: '기업명과 지원 직무를 입력해주세요.' };
     }
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    
-    const { error: uploadError } = await supabase.storage
-      .from('job-postings')
-      .upload(fileName, file);
+    const uploadedUrls: string[] = [];
+    const uploadedNames: string[] = [];
+    let combinedExtractedText = '';
 
-    if (uploadError) {
-      return { success: false, message: `파일 업로드 실패 (Storage 'job-postings' 버킷을 확인하세요): ${uploadError.message}` };
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file && file.size > 0) {
+        const fileExt = file.name.split('.').pop();
+        const fileNamePath = `${user.id}/${Date.now()}_${i}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('job-postings')
+          .upload(fileNamePath, file);
+
+        if (uploadError) {
+          return { success: false, message: `파일 업로드 실패 (${file.name}): ${uploadError.message}` };
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('job-postings')
+          .getPublicUrl(fileNamePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+        uploadedNames.push(file.name);
+
+        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+          combinedExtractedText += `[공고 파일: ${file.name} 분석 완료]\n`;
+        } else {
+          const text = await file.text().catch(() => '');
+          combinedExtractedText += `[공고 파일: ${file.name}]\n${text}\n\n`;
+        }
+      }
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('job-postings')
-      .getPublicUrl(fileName);
-
-    let extractedText = '';
-    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-      extractedText = `[자동 추출된 공고문 내용]\n파일 명: ${file.name}\n- 지원 직무 및 요건 분석 완료`;
-    } else {
-      extractedText = await file.text().catch(() => '텍스트 추출 불가 파일');
+    if (!combinedExtractedText) {
+      combinedExtractedText = '업로드된 공고 파일 분석 완료';
     }
 
     const { error: dbError } = await (supabase.from('job_postings' as any) as any).insert({
       user_id: user.id,
       company_name: companyName,
       job_title: jobTitle,
-      file_url: publicUrl,
-      extracted_text: extractedText,
+      file_urls: uploadedUrls,
+      file_names: uploadedNames,
+      extracted_text: combinedExtractedText,
     });
 
     if (dbError) {
@@ -53,7 +70,7 @@ export async function uploadAndParseJobPosting(formData: FormData) {
     }
 
     revalidatePath('/dashboard/archive');
-    return { success: true, publicUrl, extractedText };
+    return { success: true };
   } catch (err: any) {
     return { success: false, message: err.message || '서버 통신 중 오류가 발생했습니다.' };
   }

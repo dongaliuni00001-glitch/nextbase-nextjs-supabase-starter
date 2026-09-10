@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
 
 export function ProjectManager() {
   const [projects, setProjects] = useState<any[]>([]);
@@ -13,7 +14,7 @@ export function ProjectManager() {
   const [role, setRole] = useState('');
   const [techStack, setTechStack] = useState('');
   const [description, setDescription] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -50,24 +51,32 @@ export function ProjectManager() {
       return;
     }
 
-    let fileUrl = '';
-    if (file && file.size > 0) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from('projects')
-        .upload(fileName, file);
+    const uploadedUrls: string[] = [];
+    const uploadedNames: string[] = [];
 
-      if (uploadError) {
-        setErrorMsg(`파일 업로드 실패 (Storage 'projects' 버킷 확인): ${uploadError.message}`);
-        setLoading(false);
-        return;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split('.').pop();
+        const fileNamePath = `${user.id}/${Date.now()}_${i}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('projects')
+          .upload(fileNamePath, file);
+
+        if (uploadError) {
+          setErrorMsg(`파일 업로드 실패 (${file.name}): ${uploadError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('projects')
+          .getPublicUrl(fileNamePath);
+
+        uploadedUrls.push(urlData.publicUrl);
+        uploadedNames.push(file.name);
       }
-
-      const { data: publicUrlData } = supabase.storage
-        .from('projects')
-        .getPublicUrl(fileName);
-      fileUrl = publicUrlData.publicUrl;
     }
 
     const { error } = await (supabase.from('projects' as any) as any).insert({
@@ -76,7 +85,8 @@ export function ProjectManager() {
       role,
       tech_stack: techStack,
       description,
-      file_url: fileUrl,
+      file_urls: uploadedUrls,
+      file_names: uploadedNames,
     });
 
     if (error) {
@@ -86,8 +96,8 @@ export function ProjectManager() {
       setRole('');
       setTechStack('');
       setDescription('');
-      setFile(null);
-      alert('프로젝트와 레퍼런스 파일이 등록되었습니다!');
+      setFiles(null);
+      alert('프로젝트와 증빙 파일들이 성공적으로 등록되었습니다!');
       fetchProjects();
     }
     setLoading(false);
@@ -97,7 +107,7 @@ export function ProjectManager() {
     <div className="space-y-6 p-6 border rounded-xl bg-card shadow-sm max-w-2xl mx-auto">
       <h3 className="text-lg font-bold">사전 프로젝트 및 경력 관리</h3>
       <p className="text-sm text-muted-foreground">
-        자소서 AI 첨삭 시 참조할 본인의 프로젝트 경험과 관련 파일(포트폴리오, 수료증 등)을 등록하세요.
+        자소서 AI 첨삭 시 참조할 본인의 프로젝트 경험과 여러 증빙 파일(포트폴리오, 수료증 등)을 등록하세요.
       </p>
 
       <form onSubmit={handleAddProject} className="space-y-4">
@@ -120,14 +130,14 @@ export function ProjectManager() {
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="프로젝트 주요 내용 및 수치화된 성과 입력" rows={3} className="mt-1" />
         </div>
         <div>
-          <label className="text-sm font-medium">관련 증빙 파일 (선택)</label>
-          <Input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="mt-1" />
+          <label className="text-sm font-medium">관련 증빙 파일들 (다중 선택 가능)</label>
+          <Input type="file" multiple onChange={(e) => setFiles(e.target.files)} className="mt-1" />
         </div>
 
         {errorMsg && <div className="p-3 text-xs text-destructive bg-destructive/10 rounded-md">{errorMsg}</div>}
 
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? '등록 중...' : '프로젝트 및 파일 등록'}
+          {loading ? '업로드 및 등록 중...' : '프로젝트 및 다중 파일 등록'}
         </Button>
       </form>
 
@@ -141,13 +151,11 @@ export function ProjectManager() {
               <div key={p.id} className="p-4 border rounded-lg bg-background text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-sm">{p.title} <span className="text-muted-foreground font-normal">({p.role})</span></span>
-                  {p.file_url && (
-                    <a href={p.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm" className="h-7 text-xs">
-                        증빙 파일 다운로드/보기
-                      </Button>
-                    </a>
-                  )}
+                  <Link href={`/dashboard/projects/${p.id}`}>
+                    <Button variant="outline" size="sm" className="h-7 text-xs">
+                      상세보기 &rarr;
+                    </Button>
+                  </Link>
                 </div>
                 <div>기술/스펙: {p.tech_stack}</div>
                 <div className="text-muted-foreground line-clamp-2">{p.description}</div>
