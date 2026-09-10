@@ -303,8 +303,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
         const data = await response.json();
         setAiProjectReport(data);
-        // 💡 기존 하단 UI와의 호환성을 위한 매핑 변수 선언
-  const aiJobMatchingReports = jobReports;
         setJobReports(data.jobReports || []);
       } catch (err) {
         console.error('AI 분석 에러:', err);
@@ -725,6 +723,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* 📊 AI 맞춤 매칭 및 활용 전략 레포트 */}
+            // 💡 JSX 렌더링 부근에서 사용하는 aiJobMatchingReports 변수 선언
+  const aiJobMatchingReports = jobReports || [];
+
+  if (loading) {
+    return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
+  }
+
+  if (!project) {
+    return <div className="p-12 text-center text-sm text-destructive">프로젝트를 찾을 수 없습니다.</div>;
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
+      {/* ... 이하 기존 JSX 및 aiJobMatchingReports 활용부 ... */}
             {aiJobMatchingReports.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
