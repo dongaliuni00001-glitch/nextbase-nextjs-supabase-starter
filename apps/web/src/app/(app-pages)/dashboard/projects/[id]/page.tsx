@@ -278,12 +278,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
 
-    // 🤖 OpenAI API 연동을 위한 상태 정의
+  // 🤖 OpenAI API 연동 및 상태 정의
   const [aiProjectReport, setAiProjectReport] = useState<any>(null);
   const [jobReports, setJobReports] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // 🤖 프로젝트 내용과 첨부파일 정보를 담아 백엔드 API 라우트(/api/ai-analyze-project) 호출
+  // 🤖 백엔드 API 라우트(/api/ai-analyze-project) 호출
   useEffect(() => {
     async function fetchAIAnalysis() {
       if (!project) return;
@@ -302,7 +302,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         if (!response.ok) throw new Error('AI 분석 요청 실패');
 
         const data = await response.json();
-        // 💡 OpenAI가 직접 분석하고 작성한 JSON 결과물을 그대로 상태에 저장
         setAiProjectReport(data);
         setJobReports(data.jobReports || []);
       } catch (err) {
@@ -315,17 +314,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchAIAnalysis();
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
-    });
-
-{isAnalyzing && (
-  <div className="p-8 text-center text-xs text-muted-foreground border rounded-xl bg-muted/20 animate-pulse">
-    🤖 OpenAI 수석 컨설턴트 AI가 프로젝트 내용과 첨부파일을 심층 분석하여 STAR 포트폴리오를 작성하고 있습니다...
-  </div>
-)}
+  // 분석 중 로딩 UI 예시 (필요시 배치)
+  {isAnalyzing && (
+    <div className="p-8 text-center text-xs text-muted-foreground border rounded-xl bg-muted/20 animate-pulse">
+      🤖 OpenAI 수석 컨설턴트 AI가 프로젝트 내용과 첨부파일을 심층 분석하여 STAR 포트폴리오를 작성하고 있습니다...
+    </div>
+  )}
 
     const aiResult = JSON.parse(completion.choices[0].message.content || '{}');
     return NextResponse.json(aiResult);
