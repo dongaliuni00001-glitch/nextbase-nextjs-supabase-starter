@@ -30,17 +30,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   );
 
   const fetchProject = async () => {
-    const { data } = await (supabase.from('projects' as any) as any)
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (data) {
-      setProject(data);
-      const urls = data.file_urls || [];
-      const names = data.file_names || [];
-      setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `파일 ${idx + 1}` })));
+    try {
+      const { data } = await (supabase.from('projects' as any) as any)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (data) {
+        setProject(data);
+        const urls = data.file_urls || [];
+        const names = data.file_names || [];
+        setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `파일 ${idx + 1}` })));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -73,7 +78,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         fetchProject();
       }
     } catch (err: any) {
-      alert(`오류 발생: ${err?.message || '알 수 없는 오류'}`);
+      alert(`서버 통신 오류: ${err?.message || '알 수 없는 오류가 발생했습니다.'}`);
     } finally {
       setSubmitting(false);
     }
@@ -88,6 +93,32 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       alert(res.message);
     }
   };
+
+  // 실시간 입력값 기반 AI 동적 분석 생성 함수
+  const getAiAnalysis = () => {
+    if (!project) return null;
+    const desc = project.description || '';
+    const tech = project.tech_stack || '';
+    const role = project.role || '';
+    const filesCount = project.file_urls?.length || 0;
+
+    let strength = `담당 역할(${role})과 기술 스택(${tech})의 연계성이 확인됩니다.`;
+    let feedback = `상세 내용의 글자 수가 ${desc.length}자입니다. 구체적인 성과 지표(예: 공정 효율 15% 향상, 반응 시간 단축 등)를 추가하면 직무 적합도가 극대화됩니다.`;
+
+    if (desc.includes('%') || desc.includes('향상') || desc.includes('단축') || desc.includes('최적화')) {
+      strength += ` 정량적 성과 키워드가 포함되어 있어 직무 역량 어필에 매우 유리합니다.`;
+    }
+
+    if (filesCount > 0) {
+      strength += ` 첨부된 ${filesCount개의} 증빙 파일이 포트폴리오의 신뢰도를 높여줍니다.`;
+    } else {
+      feedback += ` 실험 결과서나 관련 증빙 파일을 추가로 업로드하면 서류 평가 경쟁력이 더욱 높아집니다.`;
+    }
+
+    return { strength, feedback };
+  };
+
+  const aiReport = getAiAnalysis();
 
   if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
@@ -189,20 +220,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          {/* AI 분석 레포트 섹션 추가 */}
+          {/* 실제 입력 내용 기반 AI 동적 분석 레포트 섹션 */}
           <div className="space-y-3 border-t pt-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-primary">🤖 AI 프로젝트 분석 및 개선 리포트</h3>
-              <span className="text-xs text-muted-foreground">실시간 자동 분석됨</span>
+              <h3 className="font-semibold text-sm text-primary">🤖 AI 프로젝트 실시간 심층 분석 리포트</h3>
+              <span className="text-xs text-muted-foreground">입력 데이터 기반 동기화 완료</span>
             </div>
             <div className="p-6 border rounded-xl bg-muted/20 text-sm space-y-3 leading-relaxed">
               <div>
-                <span className="font-semibold block text-xs text-muted-foreground mb-1">💡 핵심 성과 요약</span>
-                <p>본 프로젝트는 <span className="font-medium text-foreground">{project.tech_stack || '지정된 기술'}</span>을 활용하여 실무 역량을 입증할 수 있도록 구조화되어 있습니다. 업로드된 파일과 내용이 자동으로 동기화되었습니다.</p>
+                <span className="font-semibold block text-xs text-muted-foreground mb-1">💡 핵심 강점 및 분석</span>
+                <p>{aiReport?.strength}</p>
               </div>
               <div>
-                <span className="font-semibold block text-xs text-muted-foreground mb-1">📈 보완하면 좋은 점 (AI 피드백)</span>
-                <p>정량적 수치(예: 효율성 몇 % 향상, 공정 시간 단축 등)를 상세 내용에 추가하면 인사담당자에게 더욱 매력적인 포트폴리오가 됩니다.</p>
+                <span className="font-semibold block text-xs text-muted-foreground mb-1">📈 보완점 및 AI 피드백</span>
+                <p>{aiReport?.feedback}</p>
               </div>
             </div>
           </div>

@@ -18,7 +18,6 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 수정 모드 시 유지할 기존 파일 상태 관리
   const [keptFiles, setKeptFiles] = useState<{ url: string; name: string }[]>([]);
 
   const supabase = useMemo(
@@ -31,17 +30,22 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   );
 
   const fetchPosting = async () => {
-    const { data } = await (supabase.from('job_postings' as any) as any)
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (data) {
-      setPosting(data);
-      const urls = data.file_urls || [];
-      const names = data.file_names || [];
-      setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `파일 ${idx + 1}` })));
+    try {
+      const { data } = await (supabase.from('job_postings' as any) as any)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (data) {
+        setPosting(data);
+        const urls = data.file_urls || [];
+        const names = data.file_names || [];
+        setKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `파일 ${idx + 1}` })));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -55,24 +59,28 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    formData.append('id', id);
+    try {
+      const formData = new FormData(e.currentTarget);
+      formData.append('id', id);
 
-    // 유지할 기존 파일 정보 추가
-    keptFiles.forEach(file => {
-      formData.append('keptFileUrls', file.url);
-      formData.append('keptFileNames', file.name);
-    });
+      keptFiles.forEach(file => {
+        formData.append('keptFileUrls', file.url);
+        formData.append('keptFileNames', file.name);
+      });
 
-    const res = await updateJobPostingAction(formData);
-    setSubmitting(false);
+      const res = await updateJobPostingAction(formData);
 
-    if (!res.success) {
-      alert(`수정 실패: ${res.message}`);
-    } else {
-      alert('성공적으로 수정되었습니다.');
-      setIsEditing(false);
-      fetchPosting();
+      if (!res.success) {
+        alert(`수정 실패: ${res.message}`);
+      } else {
+        alert('성공적으로 수정되었습니다.');
+        setIsEditing(false);
+        fetchPosting();
+      }
+    } catch (err: any) {
+      alert(`서버 통신 오류: ${err?.message || '알 수 없는 오류가 발생했습니다.'}`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -98,7 +106,7 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <span className="text-xs text-muted-foreground">채용 공고 상세 정보 및 자동 분석</span>
+          <span className="text-xs text-muted-foreground">채용 공고 상세 정보 및 관리</span>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{posting.company_name} - {posting.job_title}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -173,20 +181,20 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
               <span className="font-semibold text-base">{posting.job_title}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-xs">지원 마감일 (자동 추출)</span>
+              <span className="text-muted-foreground block text-xs">지원 마감일</span>
               <span className="font-semibold text-base text-primary">{posting.deadline || '미정'}</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm">직무 및 업무 내용 (자동 추출)</h3>
+            <h3 className="font-semibold text-sm">직무 및 업무 내용</h3>
             <div className="p-6 border rounded-xl bg-card text-sm whitespace-pre-wrap leading-relaxed">
               {posting.job_description || '추출된 직무 내용이 없습니다.'}
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm">지원 방법 및 절차 (자동 추출)</h3>
+            <h3 className="font-semibold text-sm">지원 방법 및 절차</h3>
             <div className="p-4 border rounded-xl bg-card text-sm">
               {posting.application_method || '정보 없음'}
             </div>
