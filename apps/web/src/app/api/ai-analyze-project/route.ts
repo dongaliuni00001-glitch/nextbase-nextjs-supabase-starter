@@ -1,9 +1,4 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +6,11 @@ export async function POST(request: Request) {
 
     if (!project) {
       return NextResponse.json({ error: '프로젝트 정보가 없습니다.' }, { status: 400 });
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다.' }, { status: 500 });
     }
 
     const fileNames = (keptFiles || []).map((f: any) => f.name || f).join(', ');
@@ -29,29 +29,29 @@ export async function POST(request: Request) {
     [지원 공고 목록]
     ${JSON.stringify(selectedJobs || [])}
 
-    반드시 아래의 JSON 구조에 맞춰 한글로 응답해 주세요. (다른 마크다운 설명 없이 순수 JSON 객체만 반환)
+    반드시 아래의 JSON 구조에 맞춰 한글로 응답해 주세요. 순수 JSON 객체만 반환하세요.
     {
       "domainLabel": "프로젝트 도메인 분류",
       "summary": "프로젝트 종합 요약 한 문장",
       "expertCritique": {
-        "technicalDepth": "기술적 깊이 및 실무 타당성에 대한 전문 평가",
-        "problemSolving": "문제 해결 및 트러블슈팅 과정에 대한 분석",
-        "businessImpact": "현업 투입 시 기대되는 비즈니스 임팩트 평가"
+        "technicalDepth": "기술적 깊이 평가",
+        "problemSolving": "문제 해결 평가",
+        "businessImpact": "비즈니스 임팩트 평가"
       },
       "starPortfolio": {
-        "situation": "STAR 기법 - Situation",
-        "task": "STAR 기법 - Task",
-        "action": "STAR 기법 - Action",
-        "result": "STAR 기법 - Result"
+        "situation": "Situation",
+        "task": "Task",
+        "action": "Action",
+        "result": "Result"
       },
       "interviewQAs": [
-        { "question": "예상 면접 질문 1", "strategy": "AI 방어 및 답변 가이드 전략 1" },
-        { "question": "예상 면접 질문 2", "strategy": "AI 방어 및 답변 가이드 전략 2" },
-        { "question": "예상 면접 질문 3", "strategy": "AI 방어 및 답변 가이드 전략 3" }
+        { "question": "질문 1", "strategy": "전략 1" },
+        { "question": "질문 2", "strategy": "전략 2" },
+        { "question": "질문 3", "strategy": "전략 3" }
       ],
       "metrics": [
         { "label": "담당 역할", "value": "역할명" },
-        { "label": "연동된 증빙 자료", "value": "검증된 개수" },
+        { "label": "연동된 증빙 자료", "value": "개수" },
         { "label": "AI 심층 등급", "value": "S등급" }
       ],
       "chartData": [
@@ -64,24 +64,36 @@ export async function POST(request: Request) {
         {
           "jobId": "공고 ID",
           "matchScore": 92,
-          "correlation": "실시간 교차 분석 내용",
-          "tailoringTips": [
-            "자소서 반영 팁 1",
-            "증빙 자료 교차 활용 팁 2",
-            "성과 어필 전략 3"
-          ]
+          "correlation": "교차 분석",
+          "tailoringTips": ["팁 1", "팁 2", "팁 3"]
         }
       ]
     }
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
+    // 💡 패키지 설치 없이 네이티브 fetch로 OpenAI REST API 호출
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+      }),
     });
 
-    const aiResult = JSON.parse(completion.choices[0].message.content || '{}');
+    if (!openaiResponse.ok) {
+      const errText = await openaiResponse.text();
+      throw new Error(`OpenAI API 오류: ${errText}`);
+    }
+
+    const resData = await openaiResponse.json();
+    const content = resData.choices[0].message.content;
+    const aiResult = JSON.parse(content || '{}');
+
     return NextResponse.json(aiResult);
   } catch (error: any) {
     console.error('OpenAI API 연동 오류:', error);

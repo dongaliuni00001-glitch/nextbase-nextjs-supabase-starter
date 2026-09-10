@@ -278,12 +278,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
 
-  // 🤖 OpenAI API 연동 및 상태 정의
+  // 🤖 AI 분석 결과 상태 정의
   const [aiProjectReport, setAiProjectReport] = useState<any>(null);
   const [jobReports, setJobReports] = useState<any[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // 🤖 백엔드 API 라우트(/api/ai-analyze-project) 호출
+  // 🤖 백엔드 API 라우트 호출
   useEffect(() => {
     async function fetchAIAnalysis() {
       if (!project) return;
@@ -313,7 +313,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
     fetchAIAnalysis();
   }, [project, keptFiles, selectedJobIds, savedJobPostings]);
-
+  
   // 분석 중 로딩 UI 예시 (필요시 배치)
   {isAnalyzing && (
     <div className="p-8 text-center text-xs text-muted-foreground border rounded-xl bg-muted/20 animate-pulse">
