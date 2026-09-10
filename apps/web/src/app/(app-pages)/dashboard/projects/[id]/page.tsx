@@ -278,48 +278,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   // 🤖 🤖 [모든 분야 전면 대응 가능한 지능형 AI 프로젝트 맞춤형 컨펌 및 분석 엔진]
 
-  // 🤖 [전문가 수준 심층 평가 및 STAR 포트폴리오 자동 생성 엔진]
-  const aiProjectReport = useMemo(() => {
-    if (!project) return null;
-    try {
-      const title = String(project.title || '핵심 프로젝트');
-      const rawDesc = String(project.description || '').trim();
-      const rawRole = String(project.role || '').trim();
-      const rawTech = String(project.tech_stack || '').trim();
-      const fileCount = keptFiles.length;
-
-      const inferredRole = rawRole || '핵심 실무 및 총괄 담당자';
-      const inferredTech = rawTech || '핵심 역량, 프로세스 최적화 및 문제 해결 방법론';
-      const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 및 실무 문제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 수행 과정을 주도하여 완성도 높은 성과를 도출했습니다.`;
-
-      const combinedText = (title + ' ' + desc + ' ' + inferredTech).toLowerCase();
-      
-      let domainLabel = '종합 실무 및 기획/비즈니스 프로젝트';
-      let chartData = [
-        { phase: '요구사항 분석 & 기획', value: 30 },
-        { phase: '전략 수립 & 프로세스 설계', value: 60 },
-        { phase: '실행 고도화 및 리스크 대응', value: 85 },
-        { phase: '최종 성과 도출 및 검증', value: 100 },
-      ];
-
-      if (combinedText.includes('발열') || combinedText.includes('수중') || combinedText.includes('캡스톤') || combinedText.includes('공학') || combinedText.includes('실험') || combinedText.includes('배합') || combinedText.includes('온도') || combinedText.includes('회로') || combinedText.includes('하드웨어')) {
-        domainLabel = '공학 / 실험 및 R&D 최적화 프로젝트';
-        chartData = [
-          { phase: '1단계: 기초 배합 및 설계', value: 30 },
-          { phase: '2단계: 반응/성능 지속 테스트', value: 65 },
-          { phase: '3단계: 변인 통제 및 트러블슈팅', value: 85 },
-          { phase: '4단계: 최종 성능 최적화 달성', value: 100 },
-        ];
-      } else if (combinedText.includes('개발') || combinedText.includes('웹') || combinedText.includes('앱') || combinedText.includes('코드') || combinedText.includes('시스템') || combinedText.includes('서버') || combinedText.includes('api')) {
-        domainLabel = '소프트웨어 및 기술 개발 프로젝트';
-        chartData = [
-          { phase: '1단계: 시스템 아키텍처 설계', value: 30 },
-          { phase: '2단계: 핵심 소스 코드 구현', value: 65 },
-          { phase: '3단계: 로그 분석 및 디버깅', value: 85 },
-          { phase: '4단계: 최종 배포 및 안정화', value: 100 },
-        ];
-      }
-
       import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
