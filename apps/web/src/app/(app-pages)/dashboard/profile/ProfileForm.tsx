@@ -1,4 +1,4 @@
-// apps/web/src/app/(app-pages)/dashboard/ProfileForm.tsx
+// apps/web/src/app/(app-pages)/dashboard/profile/ProfileForm.tsx
 'use client';
 
 import { useState } from 'react';
