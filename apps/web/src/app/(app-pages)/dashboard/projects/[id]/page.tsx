@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { deleteProjectAction } from '../../archive/actions';
+import { deleteProjectAction, updateProjectAction } from '../../archive/actions';
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -16,10 +16,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState('');
-  const [role, setRole] = useState('');
-  const [techStack, setTechStack] = useState('');
-  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const supabase = useMemo(
     () =>
@@ -37,10 +34,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       .single();
     if (data) {
       setProject(data);
-      setTitle(data.title);
-      setRole(data.role || '');
-      setTechStack(data.tech_stack || '');
-      setDescription(data.description || '');
     }
     setLoading(false);
   };
@@ -49,21 +42,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     fetchProject();
   }, [id, supabase]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { error } = await (supabase.from('projects' as any) as any)
-      .update({
-        title,
-        role,
-        tech_stack: techStack,
-        description,
-      })
-      .eq('id', id);
+    setSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    formData.append('id', id);
 
-    if (error) {
-      alert(`수정 실패: ${error.message}`);
+    const res = await updateProjectAction(formData);
+    setSubmitting(false);
+
+    if (!res.success) {
+      alert(`수정 실패: ${res.message}`);
     } else {
-      alert('수정되었습니다.');
+      alert('성공적으로 수정되었습니다.');
       setIsEditing(false);
       fetchProject();
     }
@@ -105,29 +96,33 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleUpdate} className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
-          <h3 className="font-semibold text-base">프로젝트 정보 수정</h3>
+        <form onSubmit={handleUpdateSubmit} className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+          <h3 className="font-semibold text-base">프로젝트 정보 및 파일 수정</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">프로젝트명</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} required className="mt-1" />
+              <Input name="title" defaultValue={project.title} required className="mt-1" />
             </div>
             <div>
               <label className="text-sm font-medium">담당 역할</label>
-              <Input value={role} onChange={(e) => setRole(e.target.value)} required className="mt-1" />
+              <Input name="role" defaultValue={project.role} required className="mt-1" />
             </div>
           </div>
           <div>
             <label className="text-sm font-medium">사용 기술 / 스펙</label>
-            <Input value={techStack} onChange={(e) => setTechStack(e.target.value)} className="mt-1" />
+            <Input name="techStack" defaultValue={project.tech_stack} className="mt-1" />
           </div>
           <div>
             <label className="text-sm font-medium">상세 내용 및 성과</label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="mt-1" />
+            <Textarea name="description" defaultValue={project.description} rows={4} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">추가 증빙 파일 업로드 (선택)</label>
+            <Input type="file" name="files" multiple className="mt-1" />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
-            <Button type="submit">저장</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? '저장 중...' : '저장'}</Button>
           </div>
         </form>
       ) : (

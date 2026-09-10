@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { deleteJobPostingAction } from '../../archive/actions';
+import { deleteJobPostingAction, updateJobPostingAction } from '../../archive/actions';
 
 export default function JobPostingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -16,11 +16,7 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   const [posting, setPosting] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [companyName, setCompanyName] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [deadline, setDeadline] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [applicationMethod, setApplicationMethod] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const supabase = useMemo(
     () =>
@@ -38,11 +34,6 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
       .single();
     if (data) {
       setPosting(data);
-      setCompanyName(data.company_name);
-      setJobTitle(data.job_title);
-      setDeadline(data.deadline || '');
-      setJobDescription(data.job_description || '');
-      setApplicationMethod(data.application_method || '');
     }
     setLoading(false);
   };
@@ -51,22 +42,19 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
     fetchPosting();
   }, [id, supabase]);
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleUpdateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { error } = await (supabase.from('job_postings' as any) as any)
-      .update({
-        company_name: companyName,
-        job_title: jobTitle,
-        deadline,
-        job_description: jobDescription,
-        application_method: applicationMethod,
-      })
-      .eq('id', id);
+    setSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    formData.append('id', id);
 
-    if (error) {
-      alert(`수정 실패: ${error.message}`);
+    const res = await updateJobPostingAction(formData);
+    setSubmitting(false);
+
+    if (!res.success) {
+      alert(`수정 실패: ${res.message}`);
     } else {
-      alert('수정되었습니다.');
+      alert('성공적으로 수정되었습니다.');
       setIsEditing(false);
       fetchPosting();
     }
@@ -108,33 +96,37 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       {isEditing ? (
-        <form onSubmit={handleUpdate} className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
-          <h3 className="font-semibold text-base">공고 정보 수정</h3>
+        <form onSubmit={handleUpdateSubmit} className="space-y-4 p-6 border rounded-xl bg-card shadow-sm">
+          <h3 className="font-semibold text-base">공고 정보 및 파일 수정</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">기업명</label>
-              <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} required className="mt-1" />
+              <Input name="companyName" defaultValue={posting.company_name} required className="mt-1" />
             </div>
             <div>
               <label className="text-sm font-medium">지원 직무</label>
-              <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} required className="mt-1" />
+              <Input name="jobTitle" defaultValue={posting.job_title} required className="mt-1" />
             </div>
           </div>
           <div>
             <label className="text-sm font-medium">지원 마감일</label>
-            <Input value={deadline} onChange={(e) => setDeadline(e.target.value)} className="mt-1" />
+            <Input name="deadline" defaultValue={posting.deadline} className="mt-1" />
           </div>
           <div>
             <label className="text-sm font-medium">직무 및 업무 내용</label>
-            <Textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows={4} className="mt-1" />
+            <Textarea name="jobDescription" defaultValue={posting.job_description} rows={4} className="mt-1" />
           </div>
           <div>
             <label className="text-sm font-medium">지원 방법</label>
-            <Input value={applicationMethod} onChange={(e) => setApplicationMethod(e.target.value)} className="mt-1" />
+            <Input name="applicationMethod" defaultValue={posting.application_method} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">추가 증빙/공고 파일 업로드 (선택)</label>
+            <Input type="file" name="files" multiple className="mt-1" />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
-            <Button type="submit">저장</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? '저장 중...' : '저장'}</Button>
           </div>
         </form>
       ) : (
@@ -166,7 +158,7 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
 
           <div className="flex justify-end">
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              공고 내용 수정하기
+              공고 내용 및 파일 수정하기
             </Button>
           </div>
 
