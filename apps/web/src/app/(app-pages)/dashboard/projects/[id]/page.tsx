@@ -138,9 +138,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const uploadedNames: string[] = [];
 
       if (newJobFiles && newJobFiles.length > 0) {
-        for (let i = 0; i < newJobFiles.length; i++) {
-          const file = newJobFiles[i];
-          const fileName = `${Date.now()}_${file.name}`;
+  for (let i = 0; i < newJobFiles.length; i++) {
+    const file = newJobFiles[i];
+    const cleanFileName = file.name.replace(/['\s]/g, '_').replace(/[^a-zA-Z0-9가-힣._-]/g, '');
+    const fileName = `${Date.now()}_${cleanFileName}`;
           
           // 'project-files' -> 'projects' 로 수정
           const { error: uploadError } = await supabase.storage
@@ -209,9 +210,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const uploadedNames: string[] = editJobKeptFiles.map(f => f.name);
 
       if (editJobNewFiles && editJobNewFiles.length > 0) {
-        for (let i = 0; i < editJobNewFiles.length; i++) {
-          const file = editJobNewFiles[i];
-          const fileName = `${Date.now()}_${file.name}`;
+  for (let i = 0; i < editJobNewFiles.length; i++) {
+    const file = editJobNewFiles[i];
+    const cleanFileName = file.name.replace(/['\s]/g, '_').replace(/[^a-zA-Z0-9가-힣._-]/g, '');
+    const fileName = `${Date.now()}_${cleanFileName}`;
           
           // 'project-files' -> 'projects' 로 수정
           const { error: uploadError } = await supabase.storage
