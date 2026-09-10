@@ -18,7 +18,9 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
   const [isEditing, setIsEditing] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [jobTitle, setJobTitle] = useState('');
-  const [extractedText, setExtractedText] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [applicationMethod, setApplicationMethod] = useState('');
 
   const supabase = useMemo(
     () =>
@@ -38,7 +40,9 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
       setPosting(data);
       setCompanyName(data.company_name);
       setJobTitle(data.job_title);
-      setExtractedText(data.extracted_text || '');
+      setDeadline(data.deadline || '');
+      setJobDescription(data.job_description || '');
+      setApplicationMethod(data.application_method || '');
     }
     setLoading(false);
   };
@@ -53,7 +57,9 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
       .update({
         company_name: companyName,
         job_title: jobTitle,
-        extracted_text: extractedText,
+        deadline,
+        job_description: jobDescription,
+        application_method: applicationMethod,
       })
       .eq('id', id);
 
@@ -88,7 +94,7 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-6">
       <div className="flex items-center justify-between border-b pb-4">
         <div>
-          <span className="text-xs text-muted-foreground">채용 공고 상세 정보</span>
+          <span className="text-xs text-muted-foreground">채용 공고 상세 정보 및 자동 분석</span>
           <h1 className="text-2xl font-bold tracking-tight mt-1">{posting.company_name} - {posting.job_title}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -115,8 +121,16 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium">공고 텍스트 / 분석 내용</label>
-            <Textarea value={extractedText} onChange={(e) => setExtractedText(e.target.value)} rows={6} className="mt-1" />
+            <label className="text-sm font-medium">지원 마감일</label>
+            <Input value={deadline} onChange={(e) => setDeadline(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">직무 및 업무 내용</label>
+            <Textarea value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} rows={4} className="mt-1" />
+          </div>
+          <div>
+            <label className="text-sm font-medium">지원 방법</label>
+            <Input value={applicationMethod} onChange={(e) => setApplicationMethod(e.target.value)} className="mt-1" />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>취소</Button>
@@ -125,21 +139,35 @@ export default function JobPostingDetailPage({ params }: { params: Promise<{ id:
         </form>
       ) : (
         <div className="space-y-6">
-          <div className="flex justify-between items-center bg-card p-4 border rounded-xl shadow-sm">
+          <div className="grid grid-cols-2 gap-4 bg-card p-6 border rounded-xl shadow-sm text-sm">
             <div>
-              <span className="text-xs text-muted-foreground block">지원 직무</span>
+              <span className="text-muted-foreground block text-xs">지원 직무</span>
               <span className="font-semibold text-base">{posting.job_title}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              수정하기
-            </Button>
+            <div>
+              <span className="text-muted-foreground block text-xs">지원 마감일 (자동 추출)</span>
+              <span className="font-semibold text-base text-primary">{posting.deadline || '미정'}</span>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm">공고문 내용 / 요약</h3>
+            <h3 className="font-semibold text-sm">직무 및 업무 내용 (자동 추출)</h3>
             <div className="p-6 border rounded-xl bg-card text-sm whitespace-pre-wrap leading-relaxed">
-              {posting.extracted_text || '작성된 내용이 없습니다.'}
+              {posting.job_description || '추출된 직무 내용이 없습니다.'}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm">지원 방법 및 절차 (자동 추출)</h3>
+            <div className="p-4 border rounded-xl bg-card text-sm">
+              {posting.application_method || '정보 없음'}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              공고 내용 수정하기
+            </Button>
           </div>
 
           <div className="space-y-3 border-t pt-6">
