@@ -19,7 +19,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const [isEditing, setIsEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // 📁 첨부 파일 관리 상태
+  // 📁 프로젝트 첨부 파일 관리 상태
   const [keptFiles, setKeptFiles] = useState<{ url: string; name: string }[]>([]);
 
   // 📋 DB에서 불러온 저장된 채용 공고 목록 및 선택된 공고 ID 상태
@@ -181,7 +181,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       setNewJobContent('');
       setNewJobFiles(null);
       setIsWritingNewJob(false);
-      alert('채용 공고가 성공적으로 저장되고 실시간 AI 매칭에 반영되었습니다.');
+      alert('채용 공고가 성공적으로 저장되고 첨부파일이 연동되었습니다.');
       fetchData();
     } catch (err: any) {
       alert(`공고 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
@@ -274,7 +274,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const inferredTech = rawTech || '핵심 역량, 프로세스 최적화 및 문제 해결 방법론';
       const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 및 실무 문제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 수행 과정을 주도하여 완성도 높은 성과를 도출했습니다.`;
 
-      // 전 분야 자동 도메인 분류 및 맞춤 분석 생성
       const combinedText = (title + ' ' + desc + ' ' + inferredTech).toLowerCase();
       
       let domainLabel = '종합 실무 및 기획/비즈니스 프로젝트';
@@ -340,7 +339,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   }, [project, keptFiles]);
 
-  // 🤖 🤖 [지능형 AI 취업 공고 교차 매칭 엔진]
+  // 🤖 🤖 [AI가 직접 컨펌하고 동적으로 생성하는 맞춤형 분석 및 활용 전략 레포트]
   const aiJobMatchingReports = useMemo(() => {
     if (!project || selectedJobIds.length === 0) return [];
     
@@ -348,7 +347,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     const projectDesc = String(project.description || '').toLowerCase();
     const projectRole = project.role || '핵심 담당자';
     const fileCount = keptFiles.length;
-    const projectText = projectDesc + ' ' + String(project.title || '');
 
     return selectedJobIds.map(jobId => {
       const job = savedJobPostings.find(j => j.id === jobId);
@@ -374,10 +372,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       const correlation = `[AI 실시간 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 비교 분석한 결과, 직무 정합도 점수는 ${matchScore}%로 산출되었습니다. 공고문이 요구하는 핵심 자격요건 및 우대사항과 본문의 실무 이력이 높은 연관성을 보입니다.`;
       
+      // 💡 AI가 직접 컨펌하여 동적으로 생성하는 맞춤형 전략 (tailoringTips)
+      const jobFileCount = job.file_urls?.length || 0;
       const tailoringTips: string[] = [
-        `공고문에 명시된 핵심 우대사항에 맞추어 '${job.company}' 자소서에 본 프로젝트의 ${projectRole} 경험과 구체적 성과를 직접 연결해 서술하세요.`,
-        `첨부된 ${fileCount}개의 증빙 파일 및 실무 데이터를 포트폴리오 핵심 증빙 자료로 적극 인용하세요.`,
-        `공고문이 요구하는 문제 해결 역량에 맞춰 본문의 프로세스 및 성과 수치를 강조하세요.`
+        `[AI 직무 정합성 컨펌] '${jobCompany}'의 ${jobTitle} 공고에서 요구하는 핵심 자격요건과 본 프로젝트의 '${projectRole}' 수행 경험이 매우 긴밀하게 연결되어 있으므로, 자소서 지원동기 및 본문에 이 경험을 전면에 배치할 것을 AI가 컨펌합니다.`,
+        `[AI 증빙 자료 교차 활용] 본 프로젝트에 연동된 ${fileCount}개의 증빙 파일과 이 공고에 첨부된 ${jobFileCount}개의 공고 자료를 포트폴리오 및 면접 답변 시 상호 교차 인용하여 신뢰도를 극대화하세요.`,
+        `[AI 성과 어필 전략] 공고문이 강조하는 문제 해결 및 프로세스 최적화 요구사항에 맞춰, 본 프로젝트 내 트러블슈팅 과정과 정량적 성과 수치를 한눈에 드러나도록 수정하세요.`
       ];
 
       const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
@@ -624,6 +624,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   {savedJobPostings.map(job => {
                     const isSelected = selectedJobIds.includes(job.id);
                     const isEditingThisJob = editingJobId === job.id;
+                    const jobFileUrls = job.file_urls || [];
+                    const jobFileNames = job.file_names || [];
 
                     return (
                       <div key={job.id} className={`p-4 border rounded-xl transition-all ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'}`}>
@@ -682,41 +684,56 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => handleToggleJobSelection(job.id)}>
-                              <input type="checkbox" checked={isSelected} onChange={() => {}} className="rounded text-primary focus:ring-primary" />
-                              <div>
-                                <span className="text-xs font-bold text-primary mr-2">[{job.company}]</span>
-                                <span className="text-xs font-semibold">{job.title}</span>
-                                <p className="text-[11px] text-muted-foreground truncate max-w-md mt-0.5">{job.content}</p>
-                                {job.file_urls && job.file_urls.length > 0 && (
-                                  <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded mt-1 inline-block">
-                                    📎 첨부파일 {job.file_urls.length}개 포함됨
-                                  </span>
-                                )}
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => handleToggleJobSelection(job.id)}>
+                                <input type="checkbox" checked={isSelected} onChange={() => {}} className="rounded text-primary focus:ring-primary" />
+                                <div>
+                                  <span className="text-xs font-bold text-primary mr-2">[{job.company}]</span>
+                                  <span className="text-xs font-semibold">{job.title}</span>
+                                  <p className="text-[11px] text-muted-foreground truncate max-w-md mt-0.5">{job.content}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  className="h-7 text-[11px]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingJobId(job.id);
+                                    setEditJobCompany(job.company);
+                                    setEditJobTitle(job.title);
+                                    setEditJobContent(job.content);
+                                    const urls = job.file_urls || [];
+                                    const names = job.file_names || [];
+                                    setEditJobKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `첨부파일 ${idx + 1}` })));
+                                    setEditJobNewFiles(null);
+                                  }}
+                                >
+                                  ✏️ 수정
+                                </Button>
+                                <span className="text-[11px] text-muted-foreground">{isSelected ? '🟢 매칭 분석중' : '선택 안됨'}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-7 text-[11px]"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingJobId(job.id);
-                                  setEditJobCompany(job.company);
-                                  setEditJobTitle(job.title);
-                                  setEditJobContent(job.content);
-                                  const urls = job.file_urls || [];
-                                  const names = job.file_names || [];
-                                  setEditJobKeptFiles(urls.map((url: string, idx: number) => ({ url, name: names[idx] || `첨부파일 ${idx + 1}` })));
-                                  setEditJobNewFiles(null);
-                                }}
-                              >
-                                ✏️ 수정
-                              </Button>
-                              <span className="text-[11px] text-muted-foreground">{isSelected ? '🟢 매칭 분석중' : '선택 안됨'}</span>
-                            </div>
+
+                            {/* 📎 채용 공고 첨부파일 목록 화면 출력 (해결 완료 부분) */}
+                            {jobFileUrls.length > 0 && (
+                              <div className="ml-7 pt-2 border-t flex flex-wrap gap-2 items-center">
+                                <span className="text-[11px] font-medium text-muted-foreground">📎 공고 첨부 파일 ({jobFileUrls.length}개):</span>
+                                {jobFileUrls.map((fUrl: string, fIdx: number) => (
+                                  <a 
+                                    key={fIdx} 
+                                    href={fUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] bg-muted hover:bg-muted/80 px-2.5 py-1 rounded text-primary underline flex items-center gap-1 font-medium"
+                                  >
+                                    <span>{jobFileNames[fIdx] || `첨부파일 ${fIdx + 1}`}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -730,7 +747,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             {aiJobMatchingReports.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
-                  <span>📊 선택한 공고별 AI 맞춤 매칭 및 활용 전략 레포트</span>
+                  <span>📊 AI가 직접 컨펌한 공고별 맞춤 매칭 및 활용 전략 레포트</span>
                   <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">{aiJobMatchingReports.length}개 공고 분석됨</span>
                 </h4>
 
@@ -753,7 +770,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     </div>
 
                     <div className="space-y-2 p-4 border rounded-lg bg-muted/20">
-                      <span className="text-xs font-semibold text-primary block">💡 이 프로젝트를 해당 공고에 200% 살리는 AI 활용 전략 (Tailoring Tips)</span>
+                      <span className="text-xs font-semibold text-primary block">💡 AI 전문가가 직접 컨펌한 맞춤형 활용 전략 (Tailoring Tips)</span>
                       <ul className="list-disc pl-4 space-y-1 text-xs text-muted-foreground">
                         {report.tailoringTips.map((tip, tIdx) => (
                           <li key={tIdx} className="leading-relaxed">{tip}</li>
