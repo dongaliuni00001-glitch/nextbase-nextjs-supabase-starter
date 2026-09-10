@@ -34,13 +34,12 @@ async function SidebarHeaderContent() {
 async function SidebarContentWrapper() {
   const user = (await getCachedLoggedInVerifiedSupabaseUser()) as any;
   
-  // DB의 profiles 테이블에서 정확한 role 조회
   const supabase = await createSupabaseClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
+  const { data: profile } = await (supabase
+    .from('profiles' as any)
+    .select('role' as any)
     .eq('id', user.id)
-    .maybeSingle();
+    .maybeSingle() as any);
 
   const isAdmin = profile?.role === 'admin';
 

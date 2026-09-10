@@ -2,6 +2,7 @@ import { createSupabaseClient } from '@/supabase-clients/server';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { updateProfile } from './actions';
+import { ProfileForm } from './ProfileForm';
 
 export default async function ProfilePage() {
   noStore();
