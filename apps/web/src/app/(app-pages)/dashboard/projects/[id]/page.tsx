@@ -94,30 +94,69 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const getAiAnalysis = () => {
+  // 어떤 프로젝트든 범용적으로 분석하는 Universal AI 분석 엔진
+  const getUniversalAiAnalysis = () => {
     if (!project) return null;
+    const title = project.title || '프로젝트';
     const desc = project.description || '';
     const tech = project.tech_stack || '';
-    const role = project.role || '';
-    const filesCount = project.file_urls?.length || 0;
+    const role = project.role || '담당자';
 
-    let strength = `담당 역할(${role})과 기술 스택(${tech})의 연계성이 확인됩니다.`;
-    let feedback = `상세 내용의 글자 수가 ${desc.length}자입니다. 구체적인 성과 지표(예: 공정 효율 15% 향상, 반응 시간 단축 등)를 추가하면 직무 적합도가 극대화됩니다.`;
-
-    if (desc.includes('%') || desc.includes('향상') || desc.includes('단축') || desc.includes('최적화')) {
-      strength += ` 정량적 성과 키워드가 포함되어 있어 직무 역량 어필에 매우 유리합니다.`;
+    // 1. 기술 스택이 비어있을 경우 내용 및 제목을 바탕으로 도메인 자동 추론
+    let inferredTech = tech;
+    if (!tech || tech === '미지정' || tech.trim() === '') {
+      const combined = (title + ' ' + desc).toLowerCase();
+      if (combined.includes('react') || combined.includes('next') || combined.includes('web') || combined.includes('app') || combined.includes('프론트엔드')) {
+        inferredTech = 'Frontend, Web Development, UI/UX Architecture';
+      } else if (combined.includes('python') || combined.includes('ai') || combined.includes('data') || combined.includes('머신러닝') || combined.includes('분석')) {
+        inferredTech = 'Python, Data Analytics, Machine Learning';
+      } else if (combined.includes('공정') || combined.includes('설계') || combined.includes('최적화') || combined.includes('화학') || combined.includes('소재') || combined.includes('실험')) {
+        inferredTech = 'Process Optimization, R&D, Quality Control, DoE';
+      } else {
+        inferredTech = 'Project Management, Problem Solving, Technical Execution';
+      }
     }
 
-    if (filesCount > 0) {
-      strength += ` 첨부된 ${filesCount}개의 증빙 파일이 포트폴리오의 신뢰도를 높여줍니다.`;
-    } else {
-      feedback += ` 실험 결과서나 관련 증빙 파일을 추가로 업로드하면 서류 평가 경쟁력이 더욱 높아집니다.`;
-    }
+    // 2. 본문 내용을 문장 단위로 파싱하여 동적 구조화 표(Table) 생성
+    const sentences = desc.split(/[\n.]+/).filter((s: string) => s.trim().length > 3);
+    const challenge = sentences[0] || '프로젝트 초기 목표 수립 및 요건 정의';
+    const method = sentences[1] || sentences[2] || '체계적인 변인 통제 및 실행 과정 수행';
+    const result = sentences[sentences.length - 1] || '핵심 성과 도출 및 검증 완료';
 
-    return { strength, feedback };
+    const tableData = [
+      { factor: '🎯 프로젝트 목표 및 과제', condition: title, impact: challenge.trim() },
+      { factor: '⚙️ 실행 방법 및 접근법', condition: `역할: ${role}`, impact: method.trim() },
+      { factor: '📈 도출된 주요 성과', condition: '실행 및 결과 검증', impact: result.trim() },
+    ];
+
+    // 3. 성과 지표 추출 (숫자나 핵심 키워드 감지)
+    const hasMetrics = /\d+/.test(desc) || desc.includes('향상') || desc.includes('단축') || desc.includes('최적화') || desc.includes('유지') || desc.includes('달성');
+    const metrics = [
+      { label: '담당 역할', value: role },
+      { label: '성과 도출 여부', value: hasMetrics ? '정량/성능 지표 포함' : '수행 완료' },
+      { label: '서술 상세도', value: `${desc.length}자 분석됨` },
+    ];
+
+    // 4. 이력서용 한 줄 요약 생성
+    const cleanDesc = desc.replace(/\n/g, ' ').substring(0, 70);
+    const resumeBullet = `• [${role}] ${title}: ${cleanDesc}${desc.length > 70 ? '...' : ''}`;
+
+    // 5. 피드백 생성
+    const feedback = hasMetrics
+      ? '구체적인 수치와 결과 지표가 포함되어 있어 직무 전문성 어필에 매우 효과적입니다.'
+      : '상세 내용에 구체적인 성과 수치(예: 효율 % 향상, 시간 단축 등)를 보완하면 서류 평가 경쟁력이 더욱 극대화됩니다.';
+
+    return {
+      inferredTech,
+      summary: `본 프로젝트는 [${title}] 주제로 진행되었으며, ${role}로서 체계적인 분석과 문제 해결 과정을 거쳐 실무 역량을 입증할 수 있도록 구조화되어 있습니다.`,
+      tableData,
+      metrics,
+      resumeBullet,
+      feedback,
+    };
   };
 
-  const aiReport = getAiAnalysis();
+  const aiReport = getUniversalAiAnalysis();
 
   if (loading) {
     return <div className="p-12 text-center text-sm text-muted-foreground">로딩 중...</div>;
@@ -158,12 +197,12 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium">사용 기술 / 스펙</label>
-            <Input name="techStack" defaultValue={project.tech_stack} className="mt-1" />
+            <label className="text-sm font-medium">사용 기술 / 스펙 (비워두면 AI가 내용 기반으로 자동 추론합니다)</label>
+            <Input name="techStack" defaultValue={project.tech_stack} placeholder="예: React, Python, 공정 최적화 등" className="mt-1" />
           </div>
           <div>
             <label className="text-sm font-medium">상세 내용 및 성과</label>
-            <Textarea name="description" defaultValue={project.description} rows={4} className="mt-1" />
+            <Textarea name="description" defaultValue={project.description} rows={6} className="mt-1" />
           </div>
 
           <div className="space-y-2 pt-2">
@@ -203,8 +242,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 <span className="font-semibold">{project.role || '미지정'}</span>
               </div>
               <div>
-                <span className="text-muted-foreground block text-xs">사용 기술 / 스펙</span>
-                <span className="font-semibold">{project.tech_stack || '미지정'}</span>
+                <span className="text-muted-foreground block text-xs">사용 기술 / 스펙 <span className="text-xs text-primary font-normal">(AI 자동 추론 적용)</span></span>
+                <span className="font-semibold">{project.tech_stack || aiReport?.inferredTech}</span>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
@@ -219,19 +258,71 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
-          <div className="space-y-3 border-t pt-6">
+          {/* 🤖 범용 동적 AI 심층 분석 리포트 (어떤 프로젝트든 대응) */}
+          <div className="space-y-4 border-t pt-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-primary">🤖 AI 프로젝트 실시간 심층 분석 리포트</h3>
-              <span className="text-xs text-muted-foreground">입력 데이터 기반 동기화 완료</span>
+              <h3 className="font-semibold text-base text-primary flex items-center gap-2">
+                <span>🤖 AI 프로젝트 심층 분석 및 성과 리포트</span>
+              </h3>
+              <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">실시간 동기화됨</span>
             </div>
-            <div className="p-6 border rounded-xl bg-muted/20 text-sm space-y-3 leading-relaxed">
-              <div>
-                <span className="font-semibold block text-xs text-muted-foreground mb-1">💡 핵심 강점 및 분석</span>
-                <p>{aiReport?.strength}</p>
+
+            <div className="p-6 border rounded-xl bg-card shadow-sm space-y-6 text-sm">
+              {/* 핵심 요약 */}
+              <div className="space-y-1.5">
+                <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">💡 프로젝트 요약 및 핵심 역량</span>
+                <p className="leading-relaxed">{aiReport?.summary}</p>
               </div>
-              <div>
-                <span className="font-semibold block text-xs text-muted-foreground mb-1">📈 보완점 및 AI 피드백</span>
-                <p>{aiReport?.feedback}</p>
+
+              {/* KPI 메트릭 카드 */}
+              {aiReport?.metrics && aiReport.metrics.length > 0 && (
+                <div className="grid grid-cols-3 gap-3">
+                  {aiReport.metrics.map((m, idx) => (
+                    <div key={idx} className="p-3 border rounded-lg bg-muted/30 text-center">
+                      <span className="text-xs text-muted-foreground block mb-1">{m.label}</span>
+                      <span className="font-bold text-primary text-base truncate block">{m.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 동적 구조화 분석 표 (Table) */}
+              {aiReport?.tableData && aiReport.tableData.length > 0 && (
+                <div className="space-y-2">
+                  <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📊 프로젝트 단계별 구조화 분석 표</span>
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-muted/50 border-b">
+                          <th className="p-3 font-semibold">구분</th>
+                          <th className="p-3 font-semibold">입력 정보</th>
+                          <th className="p-3 font-semibold">AI 분석 및 성과</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {aiReport.tableData.map((row, idx) => (
+                          <tr key={idx} className="border-b last:border-0 hover:bg-muted/20">
+                            <td className="p-3 font-medium whitespace-nowrap">{row.factor}</td>
+                            <td className="p-3 text-muted-foreground">{row.condition}</td>
+                            <td className="p-3 font-medium text-primary">{row.impact}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 이력서 즉시 활용 성과 문장 */}
+              <div className="space-y-2 p-4 border rounded-lg bg-primary/5 border-primary/20">
+                <span className="font-semibold text-xs text-primary block">✨ [자소서/이력서 추천] 핵심 성과 한 줄 요약</span>
+                <p className="font-medium text-xs leading-relaxed">{aiReport?.resumeBullet}</p>
+              </div>
+
+              {/* AI 보완 피드백 */}
+              <div className="space-y-1 pt-2 border-t">
+                <span className="font-semibold text-xs text-muted-foreground block">📈 AI 추가 보완 피드백</span>
+                <p className="text-xs text-muted-foreground">{aiReport?.feedback}</p>
               </div>
             </div>
           </div>
