@@ -1,3 +1,4 @@
+// apps/web/src/app/(app-pages)/dashboard/archive/actions.ts
 'use server';
 
 import { createSupabaseClient } from '@/supabase-clients/server';
@@ -216,7 +217,7 @@ export async function deleteJobPostingAction(id: string) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
-    return { success: false, message: error.message };
+    return { success: false, message: err?.message || '삭제 중 오류가 발생했습니다.' };
   }
 }
 
@@ -228,6 +229,6 @@ export async function deleteProjectAction(id: string) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
-    return { success: false, message: error.message };
+    return { success: false, message: err?.message || '삭제 중 오류가 발생했습니다.' };
   }
 }
