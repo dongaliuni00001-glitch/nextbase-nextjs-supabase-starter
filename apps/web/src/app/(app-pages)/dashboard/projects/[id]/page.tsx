@@ -14,6 +14,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const router = useRouter();
   
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiProjectReport, setAiProjectReport] = useState<any>(null);
+  const [aiJobMatchingReports, setAiJobMatchingReports] = useState<any[]>([]);
+  const setJobReports = setAiJobMatchingReports; // 에러 속에서 setJobReports도 함께 쓰이고 있어 추가
+
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
