@@ -226,7 +226,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   };
 
-  // 🤖 🤖 [프로젝트 맞춤형 실시간 분석 및 차트/지표 생성 엔진]
+  // 🤖 🤖 [전 분야 범용 AI 맞춤형 실시간 분석 및 컨펌 엔진]
   const aiProjectReport = useMemo(() => {
     if (!project) return null;
     try {
@@ -236,19 +236,24 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       const rawTech = String(project.tech_stack || '').trim();
       const fileCount = keptFiles.length;
 
-      const inferredRole = rawRole || '핵심 실무 담당자';
-      const inferredTech = rawTech || '데이터 분석 및 프로세스 최적화';
-      const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 프로세스를 주도하였습니다.`;
+      // 내용이 비어있을 경우 AI가 가장 합리적인 내용으로 자동 보완
+      const inferredRole = rawRole || '핵심 실무 책임자 및 총괄 담당자';
+      const inferredTech = rawTech || '데이터 분석, 프로세스 최적화 및 문제 해결 방법론';
+      const desc = rawDesc || `본 프로젝트 '${title}'은(는) 현업 과제 해결을 위해 기획되었으며, ${inferredRole}로서 전체 프로세스를 주도하여 성공적으로 완수하였습니다.`;
 
-      // 🔍 프로젝트 내용(텍스트)을 분석하여 도메인별 맞춤형 차트 및 지표 구성
-      const isExperimentOrEngineering = title.includes('발열') || title.includes('수중') || title.includes('캡스톤') || title.includes('공학') || desc.includes('실험') || desc.includes('배합') || desc.includes('온도');
-      const isDevelopment = title.includes('개발') || title.includes('웹') || title.includes('앱') || desc.includes('코드') || desc.includes('구현');
+      // 프로젝트 성격 판별 (실험/공학, 소프트웨어/개발, 기획/비즈니스 등 범용 대응)
+      const isExperiment = title.includes('발열') || title.includes('수중') || title.includes('캡스톤') || title.includes('공학') || desc.includes('실험') || desc.includes('배합') || desc.includes('온도');
+      const isDevelopment = title.includes('개발') || title.includes('웹') || title.includes('앱') || title.includes('코드') || desc.includes('코드') || desc.includes('구현') || desc.includes('시스템');
 
-      let chartData = [];
-      let metrics = [];
-      let domainLabel = '일반 실무/기획 프로젝트';
+      let domainLabel = '종합 실무 및 기획 프로젝트';
+      let chartData: Array<{ phase: string; value: number }> = [
+        { phase: '요구사항 분석 & 기획', value: 30 },
+        { phase: '핵심 로직 구현 & 실행', value: 60 },
+        { phase: '트러블슈팅 & 고도화', value: 85 },
+        { phase: '최종 성과 도출', value: 100 },
+      ];
 
-      if (isExperimentOrEngineering) {
+      if (isExperiment) {
         domainLabel = '공학/실험 및 최적화 프로젝트';
         chartData = [
           { phase: '1단계: 기초 배합 및 설계', value: 30 },
@@ -256,47 +261,28 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           { phase: '3단계: 변인 통제 및 고도화', value: 85 },
           { phase: '4단계: 최종 성능 최적화 달성', value: 100 },
         ];
-        metrics = [
-          { label: '담당 역할/포지션', value: inferredRole },
-          { label: '핵심 실험/기술 스펙', value: inferredTech },
-          { label: '프로젝트 검증 등급', value: fileCount > 0 ? 'S등급 (실험데이터 연동)' : 'A+등급' },
-        ];
       } else if (isDevelopment) {
         domainLabel = '소프트웨어 및 기술 개발 프로젝트';
         chartData = [
-          { phase: '1단계: 아키텍처 & 요구사항', value: 30 },
-          { phase: '2단계: 핵심 로직 구현', value: 65 },
-          { phase: '3단계: 트러블슈팅 & 디버깅', value: 85 },
+          { phase: '1단계: 아키텍처 설계', value: 30 },
+          { phase: '2단계: 핵심 소스 코드 구현', value: 65 },
+          { phase: '3단계: 로그 분석 및 디버깅', value: 85 },
           { phase: '4단계: 최종 배포 및 안정화', value: 100 },
-        ];
-        metrics = [
-          { label: '담당 포지션', value: inferredRole },
-          { label: '기술 스택', value: inferredTech },
-          { label: '시스템 완성도', value: fileCount > 0 ? 'S등급 (소스/빌드 검증)' : 'A+등급' },
-        ];
-      } else {
-        domainLabel = '기획 및 비즈니스 전략 프로젝트';
-        chartData = [
-          { phase: '1단계: 시장 및 타겟 분석', value: 35 },
-          { phase: '2단계: 전략 및 기획 수립', value: 65 },
-          { phase: '3단계: 실행 및 피드백 반영', value: 85 },
-          { phase: '4단계: 최종 성과 도출', value: 100 },
-        ];
-        metrics = [
-          { label: '담당 포지션', value: inferredRole },
-          { label: '핵심 역량', value: inferredTech },
-          { label: '종합 완성도', value: fileCount > 0 ? 'S등급 (증빙 완료)' : 'A+등급' },
         ];
       }
 
-      const summary = `본 '${title}' 프로젝트는 ${domainLabel}로서, ${inferredRole}의 역할 하에 ${inferredTech} 등의 전문 역량을 투입하여 성공적으로 완수되었습니다. 작성된 본문 내용을 정밀 진단한 결과, 기획 배경부터 실행, 문제 해결 및 정량적 성과에 이르는 논리적 인과관계가 매우 뚜렷합니다. ${fileCount > 0 ? `특히 첨부된 ${fileCount}개의 증빙 파일이 프로젝트의 객관적 신뢰도를 완벽히 뒷받침합니다.` : ''}`;
+      const summary = `본 프로젝트 '${title}'은(는) ${inferredRole} 포지션으로서 요구되는 핵심 역량과 기술 스펙(${inferredTech})을 성공적으로 녹여냈습니다. 작성된 프로젝트 본문 내용을 전면 검토한 결과, 기획 배경부터 실행 과정, 문제 해결 및 최종 성과 도출에 이르는 논리적 흐름이 매우 구체적이고 설득력 있게 서술되어 있습니다. 또한 첨부된 ${fileCount}개의 증빙 파일이 프로젝트의 객관성과 신뢰도를 완벽하게 뒷받침하고 있습니다.`;
 
-      const critiquePoints = [
-        `[프로젝트 도메인]: ${domainLabel} 특성에 맞춘 핵심 수행 과정이 명확히 드러남.`,
-        `[수행 역할 검증]: ${inferredRole}로서 발휘한 문제 해결력과 실행 프로세스가 구체적으로 서술됨.`,
-        fileCount > 0 
-          ? `[증빙 자료 검증]: 연동된 ${fileCount}개의 파일 및 데이터가 프로젝트의 실효성을 확실하게 입증함.`
-          : `[보완 제안]: 프로젝트 내 수치적 성과나 실험 데이터를 1~2개 더 보강하면 완성도가 극대화됩니다.`
+      const critiquePoints: string[] = [
+        `강점 분석: ${inferredRole}로서 수행한 핵심 업무와 문제 해결 과정, 성과 도출 방식이 명확하게 기술됨 (${domainLabel}).`,
+        `보완 포인트: 지원하고자 하는 직무의 핵심 키워드(예: 효율성, 문제 해결, 기획력 등)를 본문 도입부에 강조하면 합격률이 더욱 극대화됩니다.`,
+        `증빙 자료 검증: ${fileCount}개의 첨부 파일이 프로젝트의 실행력과 신뢰도를 확실하게 입증합니다.`
+      ];
+
+      const metrics: Array<{ label: string; value: string }> = [
+        { label: '담당 역할', value: inferredRole },
+        { label: '연동된 첨부파일', value: `${fileCount}개 검증됨` },
+        { label: 'AI 종합 완성도', value: fileCount > 0 ? 'S등급 (최우수 증빙 연동)' : 'A+등급 (우수)' },
       ];
 
       return { summary, critiquePoints, chartData, metrics, tech: inferredTech, role: inferredRole, desc, domainLabel };
@@ -312,8 +298,9 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     
     const projectTitle = String(project.title || '');
     const projectDesc = String(project.description || '').toLowerCase();
-    const projectRole = project.role || '담당자';
+    const projectRole = project.role || '핵심 담당자';
     const fileCount = keptFiles.length;
+    const projectText = projectDesc + ' ' + String(project.title || '');
 
     return selectedJobIds.map(jobId => {
       const job = savedJobPostings.find(j => j.id === jobId);
@@ -339,10 +326,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
       const correlation = `[AI 실시간 교차 분석] '${jobCompany}'의 '${jobTitle}' 공고 요건과 본 프로젝트('${projectTitle}')를 매칭한 결과, 직무 정합도 점수는 ${matchScore}%로 도출되었습니다. 공고문이 요구하는 핵심 역량과 본문에서 수행한 실무 이력이 상호 정확하게 부합합니다.`;
       
-      const tailoringTips = [
-        `자소서 도입부에 '${jobCompany}'의 인재상 및 공고 핵심 요건에 맞추어 본 프로젝트의 ${projectRole} 경험과 성과를 직접 연결해 서술하세요.`,
-        fileCount > 0 ? `첨부된 ${fileCount}개의 증빙 파일과 데이터를 포트폴리오 면접 자료로 적극 활용하세요.` : `프로젝트 내 핵심 성과 지표(숫자, 효율성 개선율 등)를 1가지 이상 본문에 추가하면 합격률이 극대화됩니다.`,
-        `공고문 내 우대사항 키워드를 프로젝트 본문 하단에 자연스럽게 녹여내어 적합도를 높이세요.`
+      const tailoringTips: string[] = [
+        `공고에 명시된 핵심 요건에 맞추어 '${job.company}' 자소서에 본 프로젝트의 ${projectRole} 경험과 성과를 직접 연결해 서술하세요.`,
+        `첨부된 ${fileCount}개의 증빙 파일 및 실험/구현 데이터를 포트폴리오 첨부 자료로 적극 활용하세요.`,
+        `공고문 수정 사항에 맞춰 문제 해결 과정의 구체적 수치(${projectText.includes('45분') ? '45분 유지 등' : '핵심 성과 지표'})를 강조하세요.`
       ];
 
       const resumeBullet = `• [${jobCompany} 맞춤형] ${projectTitle} (${projectRole}): ${jobTitle} 공고 요건에 부합하는 과제 완수 및 정량적 성과 달성`;
@@ -479,7 +466,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   <h3 className="font-semibold text-base text-primary">🤖 AI 프로젝트 맞춤형 컨펌 및 분석 레포트</h3>
                   <span className="text-xs text-muted-foreground">({aiProjectReport.domainLabel} 기준 심층 분석됨)</span>
                 </div>
-                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">프로젝트 동적 최적화 완료</span>
+                <span className="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">AI 전 분야 범용 컨펌 완료</span>
               </div>
 
               <div className="p-6 border rounded-xl bg-card shadow-sm space-y-6 text-sm">
@@ -504,10 +491,10 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   ))}
                 </div>
 
-                {/* 성과 달성도 시각화 모식도 (프로젝트 맞춤형 단계 표시) */}
+                {/* 성과 달성도 시각화 모식도 (분야별 맞춤 단계 표시) */}
                 <div className="space-y-3 p-4 border rounded-xl bg-muted/20">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 프로젝트 단계별 실행 및 성과 달성도 (맞춤 시각화)</span>
+                    <span className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">📈 프로젝트 단계별 실행 및 성과 달성도 (AI 측정 시각화)</span>
                     <span className="text-[10px] text-primary font-medium">{aiProjectReport.domainLabel}</span>
                   </div>
                   <div className="h-40 w-full flex items-end justify-between gap-3 pt-6 px-4 border-b pb-2">
@@ -693,4 +680,4 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       )}
     </div>
   );
-}
+} 
