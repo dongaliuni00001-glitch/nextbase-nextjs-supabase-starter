@@ -341,7 +341,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
 
-      {isEditing ? (
+           {isEditing ? (
         /* ✏️ 프로젝트 수정 폼 */
         <form onSubmit={handleUpdateSubmit} className="space-y-6 p-6 border rounded-xl bg-card shadow-sm">
           <h3 className="font-semibold text-base">프로젝트 정보 및 첨부파일 관리</h3>
@@ -404,11 +404,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               프로젝트 수정
             </Button>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
           {/* 프로젝트 본문 내용 */}
           <div className="space-y-2">
@@ -479,7 +474,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
 
-              {/* 2. STAR 기법 기반 완성형 포트폴리오 텍스트 (이력서 직행용) */}
+              {/* 2. STAR 기법 기반 완성형 포트폴리오 텍스트 */}
               <div className="p-6 border rounded-xl bg-card shadow-sm space-y-4 border-l-4 border-l-primary">
                 <span className="text-xs font-semibold text-primary block uppercase tracking-wider">✨ STAR 기법 기반 즉시 제출용 포트폴리오 텍스트</span>
                 <div className="space-y-3 text-xs font-mono">
@@ -608,7 +603,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     return (
                       <div key={job.id} className={`p-4 border rounded-xl transition-all ${isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card'}`}>
                         {isEditingThisJob ? (
-                          /* ✏️ 공고 수정 폼 (기존 첨부파일 삭제 및 신규 첨부파일 추가 기능 탑재) */
                           <div className="space-y-4">
                             <h4 className="font-semibold text-sm text-primary">채용 공고 내용 및 첨부파일 수정</h4>
                             <div className="grid grid-cols-2 gap-3">
@@ -626,7 +620,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                               <Textarea value={editJobContent} onChange={e => setEditJobContent(e.target.value)} rows={4} placeholder="공고 내용 수정..." className="text-xs bg-card font-mono mt-1" />
                             </div>
 
-                            {/* 공고 수정 시 기존 첨부파일 관리 */}
                             <div className="space-y-2 pt-2 border-t">
                               <label className="text-xs font-medium">기존 공고 첨부파일 ({editJobKeptFiles.length}개)</label>
                               {editJobKeptFiles.length === 0 ? (
@@ -695,7 +688,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                               </div>
                             </div>
 
-                            {/* 📎 채용 공고 첨부파일 목록 화면 출력 (해결 완료 부분) */}
                             {jobFileUrls.length > 0 && (
                               <div className="ml-7 pt-2 border-t flex flex-wrap gap-2 items-center">
                                 <span className="text-[11px] font-medium text-muted-foreground">📎 공고 첨부 파일 ({jobFileUrls.length}개):</span>
@@ -722,7 +714,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             {/* 📊 AI 맞춤 매칭 및 활용 전략 레포트 */}
-                     {aiJobMatchingReports.length > 0 && (
+            {aiJobMatchingReports.length > 0 && (
               <div className="space-y-6 pt-4">
                 <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
                   <span>📊 AI가 직접 컨펌한 공고별 맞춤 매칭 및 활용 전략 레포트</span>
