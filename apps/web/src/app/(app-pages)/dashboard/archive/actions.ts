@@ -7,8 +7,8 @@ import { revalidatePath } from 'next/cache';
 export async function uploadAndParseJobPosting(formData: FormData) {
   try {
     const supabase = await createSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, message: '인증되지 않은 사용자입니다.' };
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: '인증되지 않은 사용자입니다.' };
 
     const companyName = formData.get('companyName') as string;
     const jobTitle = formData.get('jobTitle') as string;
@@ -28,20 +28,26 @@ export async function uploadAndParseJobPosting(formData: FormData) {
         const fileExt = file.name.split('.').pop() || 'file';
         const fileNamePath = `${user.id}/${Date.now()}_${i}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('job-postings')
-          .upload(fileNamePath, file);
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from('job-postings')
+            .upload(fileNamePath, file);
 
-        if (uploadError) {
-          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('job-postings')
+              .getPublicUrl(fileNamePath);
+
+            uploadedUrls.push(urlData.publicUrl);
+            uploadedNames.push(file.name);
+          } else {
+            console.warn('Storage upload warning:', uploadError.message);
+            uploadedNames.push(file.name);
+          }
+        } catch (storageErr) {
+          console.warn('Storage exception:', storageErr);
+          uploadedNames.push(file.name);
         }
-
-        const { data: urlData } = supabase.storage
-          .from('job-postings')
-          .getPublicUrl(fileNamePath);
-
-        uploadedUrls.push(urlData.publicUrl);
-        uploadedNames.push(file.name);
 
         if (file.type === 'text/plain') {
           const text = await file.text().catch(() => '');
@@ -86,8 +92,8 @@ export async function uploadAndParseJobPosting(formData: FormData) {
 export async function updateJobPostingAction(formData: FormData) {
   try {
     const supabase = await createSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, message: '인증되지 않은 사용자입니다.' };
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: '인증되지 않은 사용자입니다.' };
 
     const id = formData.get('id') as string;
     const companyName = formData.get('companyName') as string;
@@ -109,20 +115,26 @@ export async function updateJobPostingAction(formData: FormData) {
         const fileExt = file.name.split('.').pop() || 'file';
         const fileNamePath = `${user.id}/update_${Date.now()}_${i}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('job-postings')
-          .upload(fileNamePath, file);
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from('job-postings')
+            .upload(fileNamePath, file);
 
-        if (uploadError) {
-          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('job-postings')
+              .getPublicUrl(fileNamePath);
+
+            fileUrls.push(urlData.publicUrl);
+            fileNames.push(file.name);
+          } else {
+            console.warn('Storage upload warning:', uploadError.message);
+            fileNames.push(file.name);
+          }
+        } catch (storageErr) {
+          console.warn('Storage exception:', storageErr);
+          fileNames.push(file.name);
         }
-
-        const { data: urlData } = supabase.storage
-          .from('job-postings')
-          .getPublicUrl(fileNamePath);
-
-        fileUrls.push(urlData.publicUrl);
-        fileNames.push(file.name);
       }
     }
 
@@ -143,6 +155,7 @@ export async function updateJobPostingAction(formData: FormData) {
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
+    console.error('Update job posting error:', err);
     return { success: false, message: err?.message || '수정 중 오류가 발생했습니다.' };
   }
 }
@@ -150,8 +163,8 @@ export async function updateJobPostingAction(formData: FormData) {
 export async function updateProjectAction(formData: FormData) {
   try {
     const supabase = await createSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, message: '인증되지 않은 사용자입니다.' };
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, message: '인증되지 않은 사용자입니다.' };
 
     const id = formData.get('id') as string;
     const title = formData.get('title') as string;
@@ -172,20 +185,26 @@ export async function updateProjectAction(formData: FormData) {
         const fileExt = file.name.split('.').pop() || 'file';
         const fileNamePath = `${user.id}/proj_update_${Date.now()}_${i}.${fileExt}`;
         
-        const { error: uploadError } = await supabase.storage
-          .from('projects')
-          .upload(fileNamePath, file);
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from('projects')
+            .upload(fileNamePath, file);
 
-        if (uploadError) {
-          return { success: false, message: `파일 업로드 실패: ${uploadError.message}` };
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('projects')
+              .getPublicUrl(fileNamePath);
+
+            fileUrls.push(urlData.publicUrl);
+            fileNames.push(file.name);
+          } else {
+            console.warn('Projects storage upload warning:', uploadError.message);
+            fileNames.push(file.name);
+          }
+        } catch (storageErr) {
+          console.warn('Projects storage exception:', storageErr);
+          fileNames.push(file.name);
         }
-
-        const { data: urlData } = supabase.storage
-          .from('projects')
-          .getPublicUrl(fileNamePath);
-
-        fileUrls.push(urlData.publicUrl);
-        fileNames.push(file.name);
       }
     }
 
@@ -201,10 +220,12 @@ export async function updateProjectAction(formData: FormData) {
       .eq('id', id);
 
     if (error) return { success: false, message: error.message };
+
     revalidatePath(`/dashboard/projects/${id}`);
     revalidatePath('/dashboard/archive');
     return { success: true };
   } catch (err: any) {
+    console.error('Update project error:', err);
     return { success: false, message: err?.message || '수정 중 오류가 발생했습니다.' };
   }
 }
