@@ -10,7 +10,10 @@ import {
 } from '@/lib/supabase/queries';
 import {
   IntegratedResumeAnalysisRequest,
-} from '@/lib/types/job-matching';
+  UserProject,
+  SavedJobPosting,
+  AttachedFile,
+} from '@/lib/types/job-matching'; // 또는 profiles.ts 위치에 맞게 조정
 
 export async function POST(request: Request) {
   try {
@@ -35,11 +38,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // ✅ 프로필 정보 로드
+    // ✅ 프로필 정보 및 배열 타입 명시
     let profile = null;
-    let projects = [];
-    let jobs = [];
-    let files = [];
+    let projects: UserProject[] = [];
+    let jobs: SavedJobPosting[] = [];
+    let files: AttachedFile[] = [];
 
     if (userId) {
       console.log('👤 사용자 정보 로드 중...');
@@ -83,8 +86,8 @@ export async function POST(request: Request) {
       files: files.length > 0 ? files : undefined,
     };
 
-    // ✅ 분석 실행
-    const analyzer = new ResumeAnalyzer('openai');
+    // ✅ 분석 실행 (인자 없이 호출)
+    const analyzer = new ResumeAnalyzer();
     const result = await analyzer.analyze(analysisRequest);
 
     if (!result) {
