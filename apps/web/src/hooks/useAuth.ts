@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createClient } from '@/supabase-clients'; // 또는 실제 supabase-clients 파일이 위치한 경로
+import { createClient } from '@/supabase-clients/client'; // 👈 경로 수정
 import { User, Session } from '@supabase/supabase-js';
 
 export function useAuth() {
