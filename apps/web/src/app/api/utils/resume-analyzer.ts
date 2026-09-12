@@ -4,7 +4,7 @@ import {
   UserProject,
   SavedJobPosting,
   AttachedFile,
-} from '@/lib/types/profile';
+} from '@/lib/types/profiles'; // 👈 profile -> profiles로 수정
 import {
   IntegratedResumeAnalysisRequest,
   IntegratedResumeAnalysisResult,
@@ -18,8 +18,8 @@ import { generateIntegratedResumeAnalysisPrompt } from './prompts';
 export class ResumeAnalyzer {
   private aiClient: AIClient;
 
-  constructor(provider: 'openai' | 'gemini' = 'openai') {
-    this.aiClient = new AIClient(provider);
+  constructor() {
+    this.aiClient = new AIClient(); // 👈 인자 제거
   }
 
   /**
@@ -43,14 +43,14 @@ export class ResumeAnalyzer {
         prompt
       );
 
-      if (!result.success) {
-        console.error('❌ AI 분석 실패:', result.error);
+      if (!result) {
+        console.error('❌ AI 분석 실패');
         return null;
       }
 
       // 결과 검증 및 보강
       const validatedResult = this.validateAndEnhanceResult(
-        result.data!,
+        result,
         data
       );
 
@@ -127,8 +127,8 @@ export function calculateProjectRelevance(
     score += 30;
   }
 
-  // 기술 스택이 자소서에 포함되었는가?
-  const techs = project.tech_stack.split(',').map((t) => t.trim());
+  // 기술 스택이 자소서에 포함되었는가? (skills 배열 사용)
+  const techs = project.skills || [];
   const techMatches = techs.filter((tech) =>
     resumeText.toLowerCase().includes(tech.toLowerCase())
   ).length;
@@ -136,10 +136,6 @@ export function calculateProjectRelevance(
 
   // 공고 요구사항과 기술이 매칭되었는가?
   if (jobRequirements) {
-    const jobTechs = jobRequirements
-      .toLowerCase()
-      .split(',')
-      .map((t) => t.trim());
     const jobMatches = techs.filter((tech) =>
       jobRequirements.toLowerCase().includes(tech.toLowerCase())
     ).length;

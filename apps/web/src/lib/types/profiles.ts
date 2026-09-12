@@ -1,26 +1,35 @@
-// 사용자 프로필 정보
 export interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  location?: string;
+  id?: string;
+  user_id?: string;
+  name?: string;
+  email?: string;
+  major?: string;
+  university?: string;
   bio?: string;
-  skills?: string[];
-  experience_years?: number;
-  education?: EducationItem[];
-  social_links?: {
-    github?: string;
-    linkedin?: string;
-    portfolio?: string;
-  };
-  created_at?: string;
-  updated_at?: string;
+  [key: string]: any;
 }
 
-export interface EducationItem {
-  school: string;
-  degree: string;
-  field: string;
-  graduation_date?: string;
+export interface UserProject {
+  id: string;
+  user_id?: string;
+  title: string;
+  description?: string;
+  role?: string;
+  skills?: string[];
+  [key: string]: any;
+}
+
+export interface AttachedFile {
+  id?: string;
+  name: string;
+  url: string;
+  [key: string]: any;
+}
+
+export interface SavedJobPosting {
+  id: string;
+  title: string;
+  company?: string;
+  description?: string;
+  [key: string]: any;
 }
