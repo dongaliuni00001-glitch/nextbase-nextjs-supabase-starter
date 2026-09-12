@@ -1,5 +1,7 @@
-
 import { UserProfile, UserProject, AttachedFile } from './profile';
+
+// 외부에서 job-matching.ts를 통해 프로필 관련 타입을 임포트할 수 있도록 재수출
+export type { UserProfile, UserProject, AttachedFile };
 
 // 저장된 취업 공고
 export interface SavedJobPosting {
