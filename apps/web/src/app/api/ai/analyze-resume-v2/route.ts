@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ResumeAnalyzer } from '../utils/resume-analyzer';
+import { ResumeAnalyzer } from '@/utils/resume-analyzer';
 import {
   getUserProfile,
   getUserProjects,

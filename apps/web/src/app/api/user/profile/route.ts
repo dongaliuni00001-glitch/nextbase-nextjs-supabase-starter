@@ -22,11 +22,8 @@ export async function GET(request: Request) {
     );
   }
 }
-```
 
-**경로:** `apps/web/src/app/api/user/projects/route.ts`
 
-```typescript
 import { NextResponse } from 'next/server';
 import { getUserProjects } from '@/lib/supabase/queries';
 
@@ -51,11 +48,7 @@ export async function GET(request: Request) {
     );
   }
 }
-```
 
-**경로:** `apps/web/src/app/api/user/saved-jobs/route.ts`
-
-```typescript
 import { NextResponse } from 'next/server';
 import { getSavedJobPostings } from '@/lib/supabase/queries';
 
