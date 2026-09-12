@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     // ✅ 프로필 정보 및 배열 타입 명시
-    let profile = null;
+    let profile: any = null;;
     let projects: UserProject[] = [];
     let jobs: SavedJobPosting[] = [];
     let files: AttachedFile[] = [];
