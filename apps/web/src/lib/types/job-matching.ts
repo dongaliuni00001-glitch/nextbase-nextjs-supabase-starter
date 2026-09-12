@@ -1,4 +1,4 @@
-import { UserProfile, UserProject, AttachedFile } from './profile';
+export type { UserProfile, UserProject, AttachedFile, SavedJobPosting } from './profile';
 
 // 저장된 취업 공고
 export interface SavedJobPosting {
