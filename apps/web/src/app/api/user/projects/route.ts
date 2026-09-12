@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUserProfile } from '@/lib/supabase/queries';
+import { getUserProjects } from '@/lib/supabase/queries';
 
 export async function GET(request: Request) {
   try {
@@ -13,11 +13,11 @@ export async function GET(request: Request) {
       );
     }
 
-    const profile = await getUserProfile(userId);
-    return NextResponse.json(profile || {});
+    const projects = await getUserProjects(userId);
+    return NextResponse.json(projects);
   } catch (error) {
     return NextResponse.json(
-      { error: '프로필 조회 실패' },
+      { error: '프로젝트 조회 실패' },
       { status: 500 }
     );
   }
