@@ -33,3 +33,13 @@ export interface SavedJobPosting {
   description?: string;
   [key: string]: any;
 }
+
+export interface SavedResume {
+  id: string;
+  user_id?: string;
+  title?: string;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
