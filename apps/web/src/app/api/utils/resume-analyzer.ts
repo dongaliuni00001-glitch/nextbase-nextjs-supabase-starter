@@ -4,7 +4,8 @@ import {
   UserProject,
   SavedJobPosting,
   AttachedFile,
-} from '@/lib/types/profiles'; // 👈 profile -> profiles로 수정
+} from '@/lib/types/profile';
+
 import {
   IntegratedResumeAnalysisRequest,
   IntegratedResumeAnalysisResult,
