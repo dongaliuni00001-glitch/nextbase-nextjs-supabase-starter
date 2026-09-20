@@ -1,23 +1,13 @@
 import { NextResponse } from 'next/server';
-<<<<<<< HEAD
 import { requireApiUser } from '@/lib/auth/api';
-=======
-import { getSavedJobPostings } from '@/lib/supabase/queries';
-import { requireApiUser } from '@/lib/auth/api';
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
 
-export async function GET(request: Request) {
+export async function POST(req: Request) {
   try {
-<<<<<<< HEAD
     // =========================================================
     // 1. API 인증
     // =========================================================
     const auth = await requireApiUser();
-=======
-    const auth = await requireApiUser();
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
 
-<<<<<<< HEAD
     if (!auth) {
       return NextResponse.json(
         { error: '로그인이 필요합니다.' },
@@ -34,7 +24,7 @@ export async function GET(request: Request) {
     // 2. 요청 데이터 파싱
     // =========================================================
     let body: {
-      resumeText?: string;
+      resumeText?: unknown;
     };
 
     try {
@@ -51,7 +41,10 @@ export async function GET(request: Request) {
     // =========================================================
     // 3. 자기소개서 입력값 검증
     // =========================================================
-    if (typeof resumeText !== 'string' || !resumeText.trim()) {
+    if (
+      typeof resumeText !== 'string' ||
+      !resumeText.trim()
+    ) {
       return NextResponse.json(
         { error: '자기소개서 내용을 입력해주세요.' },
         { status: 400 }
@@ -61,12 +54,28 @@ export async function GET(request: Request) {
     const trimmedResumeText = resumeText.trim();
 
     // =========================================================
-    // 4. Gemini API Key 확인
+    // 4. 입력 길이 제한
+    // =========================================================
+    const MAX_RESUME_LENGTH = 30000;
+
+    if (trimmedResumeText.length > MAX_RESUME_LENGTH) {
+      return NextResponse.json(
+        {
+          error: `자기소개서는 ${MAX_RESUME_LENGTH.toLocaleString()}자 이하로 입력해주세요.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // =========================================================
+    // 5. Gemini API Key 확인
     // =========================================================
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('❌ GEMINI_API_KEY가 설정되지 않았습니다.');
+      console.error(
+        '❌ GEMINI_API_KEY가 설정되지 않았습니다.'
+      );
 
       return NextResponse.json(
         { error: 'AI 서비스 설정이 올바르지 않습니다.' },
@@ -75,7 +84,7 @@ export async function GET(request: Request) {
     }
 
     // =========================================================
-    // 5. Gemini Prompt 생성
+    // 6. Gemini Prompt 생성
     // =========================================================
     const prompt = `
 다음 자기소개서를 분석하여 지원자의 강점, 보완해야 할 약점,
@@ -94,7 +103,7 @@ ${trimmedResumeText}
 `.trim();
 
     // =========================================================
-    // 6. Gemini API 호출
+    // 7. Gemini API 호출
     // =========================================================
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
@@ -118,23 +127,28 @@ ${trimmedResumeText}
     );
 
     // =========================================================
-    // 7. Gemini 응답 JSON 파싱
+    // 8. Gemini 응답 JSON 파싱
     // =========================================================
     let data: any;
 
     try {
       data = await response.json();
     } catch {
-      console.error('❌ Gemini 응답 JSON 파싱 실패');
+      console.error(
+        '❌ Gemini 응답 JSON 파싱 실패'
+      );
 
       return NextResponse.json(
-        { error: 'AI 서비스에서 올바른 응답을 받지 못했습니다.' },
+        {
+          error:
+            'AI 서비스에서 올바른 응답을 받지 못했습니다.',
+        },
         { status: 502 }
       );
     }
 
     // =========================================================
-    // 8. Gemini API 오류 처리
+    // 9. Gemini API 오류 처리
     // =========================================================
     if (!response.ok) {
       console.error('❌ Gemini API 오류:', {
@@ -143,47 +157,38 @@ ${trimmedResumeText}
         error: data?.error?.message,
       });
 
-=======
-    if (!auth) {
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
       return NextResponse.json(
-<<<<<<< HEAD
         {
-          error: 'AI 분석 요청을 처리하지 못했습니다.',
+          error:
+            'AI 분석 요청을 처리하지 못했습니다.',
         },
         { status: 502 }
-=======
-        { error: 'Unauthorized' },
-        { status: 401 }
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
       );
     }
 
-<<<<<<< HEAD
     // =========================================================
-    // 9. 분석 결과 추출
+    // 10. 분석 결과 추출
     // =========================================================
     const analysisResult =
       data?.candidates?.[0]?.content?.parts?.[0]?.text;
-=======
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('user_id');
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
 
-<<<<<<< HEAD
     if (!analysisResult) {
-      console.error('❌ Gemini 분석 결과가 없습니다:', data);
+      console.error(
+        '❌ Gemini 분석 결과가 없습니다:',
+        data
+      );
 
       return NextResponse.json(
         {
-          error: '분석 결과를 생성하지 못했습니다.',
+          error:
+            '분석 결과를 생성하지 못했습니다.',
         },
         { status: 502 }
       );
     }
 
     // =========================================================
-    // 10. 결과 반환
+    // 11. 결과 반환
     // =========================================================
     console.log('✅ Gemini 자기소개서 분석 완료');
 
@@ -193,27 +198,19 @@ ${trimmedResumeText}
     });
   } catch (error: unknown) {
     // =========================================================
-    // 11. 서버 오류 처리
+    // 12. 서버 오류 처리
     // =========================================================
-    console.error('❌ /api/analyze 서버 오류:', error);
+    console.error(
+      '❌ /api/analyze 서버 오류:',
+      error
+    );
 
     return NextResponse.json(
       {
-        error: '서버에서 AI 분석을 처리하는 중 오류가 발생했습니다.',
+        error:
+          '서버에서 AI 분석을 처리하는 중 오류가 발생했습니다.',
       },
       { status: 500 }
     );
-=======
-    const jobs = await getSavedJobPostings(userId || undefined);
-
-    return NextResponse.json(jobs);
-  } catch (error) {
-    console.error('Jobs API error:', error);
-
-    return NextResponse.json(
-      { error: '공고 조회 실패' },
-      { status: 500 }
-    );
->>>>>>> ebf3f146eb50c1a1c4d0226adea7f7a4356f9cfe
   }
 }
