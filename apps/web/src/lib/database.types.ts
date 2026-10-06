@@ -571,12 +571,12 @@ export type Enums<
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
-  }
-    ? keyof DatabaseWithoutInternals[
-        DefaultSchemaTableNameOrOptions["schema"]
-      ]["Enums"]
-    : never = never,
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? keyof DatabaseWithoutInternals[
+      DefaultSchemaEnumNameOrOptions["schema"]
+    ]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals;
 }
