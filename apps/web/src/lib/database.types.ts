@@ -526,9 +526,3 @@ export const Constants = {
     Enums: {},
   },
 } as const;
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const;

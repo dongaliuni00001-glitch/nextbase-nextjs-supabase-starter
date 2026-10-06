@@ -297,8 +297,8 @@ export async function POST(request: Request) {
       projects,
       jobs,
       files,
-      company_name: companyName || undefined,
-      position: position || undefined,
+      company_name: companyName ?? undefined,
+      position: position ?? undefined,
     };
 
     // =========================================================
