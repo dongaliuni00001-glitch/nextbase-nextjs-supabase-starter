@@ -136,27 +136,27 @@ export async function POST(request: Request) {
     // 3. 자기소개서 내용 확보
     // =========================================================
 
-    let finalResumeText = resumeText;
+    let finalResumeText: string | null | undefined = resumeText;
 
-    if (!finalResumeText?.trim() && resumeId) {
-      console.log('📄 저장된 자기소개서 조회:', resumeId);
+if (!finalResumeText?.trim() && resumeId) {
+  console.log('📄 저장된 자기소개서 조회:', resumeId);
 
-      finalResumeText = await getResumeContent(
-        resumeId,
-        user.id
-      );
+  finalResumeText = await getResumeContent(
+    resumeId,
+    user.id
+  );
+}
+
+if (!finalResumeText?.trim()) {
+  return NextResponse.json(
+    {
+      error: '자기소개서 내용을 입력해주세요.',
+    },
+    {
+      status: 400,
     }
-
-    if (!finalResumeText?.trim()) {
-      return NextResponse.json(
-        {
-          error: '자기소개서 내용을 입력해주세요.',
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+  );
+}
 
     finalResumeText = finalResumeText.trim();
 
