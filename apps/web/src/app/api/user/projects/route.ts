@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { requireApiUser } from '@/lib/auth/api';
 import { getUserProjects } from '@/lib/supabase/queries';
 
+// 로그인 세션에 따라 응답이 달라지므로 정적 생성하지 않는다.
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // =========================================================
