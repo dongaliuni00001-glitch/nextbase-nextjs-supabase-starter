@@ -37,7 +37,7 @@ export async function approveUser(formData: FormData) {
   // 유저 상태를 active(또는 승인 완료 상태)로 변경
   const { error } = await supabaseAdmin
     .from('profiles')
-    .update({ status: 'active' })
+    .update({ status: 'approved' })
     .eq('id', userId);
 
   if (error) {
