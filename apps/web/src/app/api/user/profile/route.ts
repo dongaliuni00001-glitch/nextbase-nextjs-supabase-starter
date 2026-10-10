@@ -1,11 +1,9 @@
-import { connection, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { requireApiUser } from '@/lib/auth/api';
 import { getUserProfile } from '@/lib/supabase/queries';
 
 export async function GET() {
   try {
-    // 요청 시점에 실행하도록 하여 정적 프리렌더링을 방지한다.
-    await connection();
     
     // =========================================================
     // 1. API 인증
