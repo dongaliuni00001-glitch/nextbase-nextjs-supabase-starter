@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
+import {  connection, NextResponse } from 'next/server';
 import { requireApiUser } from '@/lib/auth/api';
 import { getUserProfile } from '@/lib/supabase/queries';
 
 export async function GET() {
+  // 요청이 들어온 시점에 실행하도록 한다.
+  // try-catch 밖에 두어 Next.js의 프리렌더링 제어를 가로채지 않는다.
+  await connection();
+
   try {
     
     // =========================================================
